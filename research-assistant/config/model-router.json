@@ -1,0 +1,25 @@
+{
+  "version": "v1",
+  "routes": {
+    "code_execution": {
+      "primary": "openai-codex/gpt-5.3-codex",
+      "fallbacks": ["moonshot/kimi-k2.5"]
+    },
+    "literature_gap": {
+      "primary": "moonshot/kimi-k2.5",
+      "fallbacks": ["openrouter/deepseek/deepseek-r1"]
+    },
+    "daily_weekly": {
+      "primary": "openrouter/deepseek/deepseek-chat",
+      "fallbacks": ["moonshot/kimi-k2.5"]
+    },
+    "paper_writing": {
+      "primary": "moonshot/kimi-k2.5",
+      "fallbacks": ["openrouter/deepseek/deepseek-r1"]
+    }
+  },
+  "defaults": {
+    "timeoutMs": 90000,
+    "maxRetries": 1
+  }
+}

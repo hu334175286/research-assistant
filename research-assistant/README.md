@@ -9,6 +9,15 @@
 - API：`/api/papers`、`/api/experiments`
 - 报告脚本：日报（09:00）/周报（周五12:00）
 
+## 已实现（D2-路由基线）
+- 4层模型路由配置：`config/model-router.json`
+- 路由加载器：`lib/model-router.js`
+- 查询API：`/api/model-route?taskType=...`
+  - `code_execution`
+  - `literature_gap`
+  - `daily_weekly`
+  - `paper_writing`
+
 ## 本地启动
 ```bash
 cp .env.example .env
