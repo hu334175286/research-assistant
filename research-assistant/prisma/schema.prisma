@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Paper {
+  id          String   @id @default(cuid())
+  title       String
+  year        Int?
+  source      String?
+  tags        String?
+  summaryJson String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Experiment {
+  id          String   @id @default(cuid())
+  name        String
+  hypothesis  String?
+  configJson  String?
+  metricsJson String?
+  conclusion  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Insight {
+  id         String   @id @default(cuid())
+  sourceType String
+  sourceId   String?
+  text       String
+  tags       String?
+  createdAt  DateTime @default(now())
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  title     String
+  status    String   @default("todo")
+  dueAt     DateTime?
+  priority  Int      @default(2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DailyReport {
+  id          String   @id @default(cuid())
+  dayKey       String   @unique
+  contentShort String?
+  contentFull  String?
+  generatedAt  DateTime @default(now())
+}
+
+model WeeklyReport {
+  id         String   @id @default(cuid())
+  weekKey    String   @unique
+  contentMd  String?
+  generatedAt DateTime @default(now())
+}
