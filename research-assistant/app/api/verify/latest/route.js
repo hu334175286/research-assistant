@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     const result = await readLatestVerifyResult();
-    return Response.json(result);
+    return Response.json({ ...result, logPath: result?.logPath || VERIFY_LATEST_PATH });
   } catch (error) {
     if (error?.code === 'ENOENT') {
       return Response.json(

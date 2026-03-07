@@ -121,6 +121,7 @@ export async function runVerify({ dryRun = false } = {}) {
     durationMs: finishedAt - startedAt,
     dryRun,
     ok,
+    logPath: VERIFY_LATEST_PATH,
     steps,
   };
 
