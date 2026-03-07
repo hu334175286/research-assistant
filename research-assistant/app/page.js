@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import ModelRouteSelector from '@/app/components/model-route-selector';
 
 export default async function HomePage() {
   const [paperCount, expCount, taskCount] = await Promise.all([
@@ -34,6 +35,8 @@ export default async function HomePage() {
           <li><a href="/api/model-route?taskType=literature_gap">模型路由示例 API</a></li>
         </ul>
       </section>
+
+      <ModelRouteSelector />
     </main>
   );
 }
