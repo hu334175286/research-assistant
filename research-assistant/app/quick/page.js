@@ -1,8 +1,21 @@
 import Link from 'next/link';
 import { getRecommendedBaseUrl } from '@/lib/recommended-base-url';
+import ModelSwitchPanel from '@/app/components/model-switch-panel';
+import { getModelHealthSummary } from '@/lib/model-health';
+
+const healthColorMap = {
+  green: { bg: '#dcfce7', fg: '#166534', border: '#86efac', text: '绿色' },
+  yellow: { bg: '#fef9c3', fg: '#854d0e', border: '#fde047', text: '黄色' },
+  red: { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5', text: '红色' },
+};
 
 export default async function QuickPage() {
-  const { recommended, primary, fallback, isPrimaryAvailable } = await getRecommendedBaseUrl();
+  const [recommendedInfo, modelHealthList] = await Promise.all([
+    getRecommendedBaseUrl(),
+    getModelHealthSummary(),
+  ]);
+
+  const { recommended, primary, fallback, isPrimaryAvailable } = recommendedInfo;
 
   const appLinks = [
     { href: '/', label: '首页门户' },
@@ -27,6 +40,8 @@ export default async function QuickPage() {
     { href: '/api/search?q=edge ai', label: '统一搜索 API 示例' },
     { href: '/api/model-route?taskType=literature_gap', label: '模型路由 API 示例' },
     { href: '/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429', label: '模型故障切换 API 示例' },
+    { href: '/api/model-switch', label: '模型手动切换 API（POST）' },
+    { href: '/api/model-health', label: '模型健康度 API' },
   ];
 
   return (
@@ -40,6 +55,30 @@ export default async function QuickPage() {
           检测结果：{isPrimaryAvailable ? `${primary} 可访问（优先）` : `${primary} 不可访问，已切换推荐 ${fallback}`}
         </div>
       </section>
+
+      <section style={{ marginTop: 18 }}>
+        <h2>模型可用性 / 配额预警</h2>
+        <p style={{ marginTop: 6, color: '#475569', fontSize: 14 }}>
+          部分 provider 不返回真实剩余额度，当前为事件近似预警。
+        </p>
+        <div style={gridStyle}>
+          {modelHealthList.map((item) => {
+            const palette = healthColorMap[item.health] || healthColorMap.green;
+            return (
+              <div key={item.model} style={{ ...healthCardStyle, borderColor: palette.border }}>
+                <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.model}</div>
+                <div style={{ marginTop: 8, display: 'inline-block', padding: '2px 10px', borderRadius: 999, background: palette.bg, color: palette.fg, fontSize: 12, fontWeight: 700 }}>
+                  {palette.text}
+                </div>
+                <div style={{ marginTop: 10, fontSize: 13, color: '#334155' }}>最近失败次数：{item.failCount}</div>
+                <div style={{ marginTop: 4, fontSize: 13, color: '#334155' }}>最近切换事件数：{item.switchCount}</div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <ModelSwitchPanel />
 
       <section style={{ marginTop: 18 }}>
         <h2>网页入口</h2>
@@ -98,4 +137,11 @@ const cardStyle = {
 const apiCardStyle = {
   ...cardStyle,
   background: '#f8fafc',
+};
+
+const healthCardStyle = {
+  background: '#ffffff',
+  border: '1px solid #e2e8f0',
+  borderRadius: 10,
+  padding: 14,
 };
