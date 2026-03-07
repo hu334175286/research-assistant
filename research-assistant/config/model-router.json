@@ -51,6 +51,17 @@
   },
   "defaults": {
     "timeoutMs": 120000,
-    "maxRetries": 2
+    "maxRetries": 2,
+    "failover": {
+      "enabled": true,
+      "retryOn": [
+        "rate_limit",
+        "insufficient_quota",
+        "timeout",
+        "network_error",
+        "server_error"
+      ],
+      "notifyOnSwitch": true
+    }
   }
 }
