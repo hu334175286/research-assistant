@@ -27,10 +27,11 @@ function parseYear(value) {
 }
 
 export default async function VisualInsightsPage({ searchParams }) {
-  const quality = QUALITY_OPTIONS.includes(searchParams?.quality) ? searchParams.quality : 'all';
-  const source = SOURCE_OPTIONS.includes(searchParams?.source) ? searchParams.source : 'all';
-  const yearFrom = parseYear(searchParams?.yearFrom);
-  const yearTo = parseYear(searchParams?.yearTo);
+  const sp = await searchParams;
+  const quality = QUALITY_OPTIONS.includes(sp?.quality) ? sp.quality : 'all';
+  const source = SOURCE_OPTIONS.includes(sp?.source) ? sp.source : 'all';
+  const yearFrom = parseYear(sp?.yearFrom);
+  const yearTo = parseYear(sp?.yearTo);
 
   const allPapers = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 300 });
 

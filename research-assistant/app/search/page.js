@@ -47,8 +47,9 @@ function toPreview(text, maxLen = 280) {
 }
 
 export default async function SearchPage({ searchParams }) {
-  const q = (searchParams?.q || '').trim();
-  const type = TYPES.includes(searchParams?.type) ? searchParams.type : 'all';
+  const sp = await searchParams;
+  const q = (sp?.q || '').trim();
+  const type = TYPES.includes(sp?.type) ? sp.type : 'all';
 
   let papers = [];
   let experiments = [];

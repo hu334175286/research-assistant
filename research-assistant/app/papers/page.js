@@ -13,7 +13,8 @@ function badge(text, bg = '#eef2ff', color = '#3730a3') {
 const FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
 
 export default async function PapersPage({ searchParams }) {
-  const requested = searchParams?.quality;
+  const sp = await searchParams;
+  const requested = sp?.quality;
   const qualityFilter = FILTER_OPTIONS.includes(requested) ? requested : 'all';
 
   const allPapers = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
