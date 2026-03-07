@@ -48,3 +48,10 @@ npm run dev
 ```bash
 npm run scheduler
 ```
+
+## 自动化开发巡检（推荐）
+```bash
+npm run auto:cycle
+```
+
+输出报告：`reports/automation/latest.md`（包含 build / smoke / auto-fetch 结果）

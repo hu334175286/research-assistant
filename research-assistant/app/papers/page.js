@@ -55,6 +55,12 @@ export default async function PapersPage({ searchParams }) {
           );
         })}
         <span style={{ color: '#6b7280', fontSize: 13 }}>共 {papers.length} 条</span>
+        <a
+          href="/api/papers/bibtex/export"
+          style={{ marginLeft: 'auto', fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
+        >
+          导出全部 BibTeX
+        </a>
       </div>
 
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
@@ -65,6 +71,7 @@ export default async function PapersPage({ searchParams }) {
               <th style={{ padding: 12, width: 90 }}>年份</th>
               <th style={{ padding: 12, width: 120 }}>质量层级</th>
               <th style={{ padding: 12, width: 180 }}>来源</th>
+              <th style={{ padding: 12, width: 130 }}>引用导出</th>
             </tr>
           </thead>
           <tbody>
@@ -79,12 +86,17 @@ export default async function PapersPage({ searchParams }) {
                   <td style={{ padding: 12 }}>{p.year || '-'}</td>
                   <td style={{ padding: 12 }}>{qualityLabel(level)}</td>
                   <td style={{ padding: 12 }}>{p.source || '-'}</td>
+                  <td style={{ padding: 12 }}>
+                    <a href={`/api/papers/${p.id}/bibtex`} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>
+                      导出 BibTeX
+                    </a>
+                  </td>
                 </tr>
               );
             })}
             {!papers.length ? (
               <tr>
-                <td style={{ padding: 16, color: '#6b7280' }} colSpan={4}>
+                <td style={{ padding: 16, color: '#6b7280' }} colSpan={5}>
                   当前筛选条件下暂无文献。
                 </td>
               </tr>

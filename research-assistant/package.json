@@ -13,7 +13,8 @@
     "report:weekly": "node scripts/generate-weekly-report.js",
     "papers:auto-fetch": "node scripts/fetch-papers.js",
     "scheduler": "node scripts/scheduler.js",
-    "smoke": "node scripts/smoke-check.js"
+    "smoke": "node scripts/smoke-check.js",
+    "auto:cycle": "node scripts/dev-auto-cycle.js"
   },
   "dependencies": {
     "@prisma/client": "6.5.0",

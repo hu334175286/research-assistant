@@ -9,6 +9,7 @@ const navs = [
   ['首页', '/'],
   ['指挥台', '/dashboard'],
   ['文献库', '/papers'],
+  ['搜索', '/search'],
   ['实验', '/experiments'],
   ['日报', '/reports/daily'],
   ['周报', '/reports/weekly'],
