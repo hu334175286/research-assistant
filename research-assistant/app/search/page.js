@@ -1,10 +1,34 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { getPaperQuality, qualityLabel } from '@/lib/paper-quality';
 
 const TYPES = ['all', 'paper', 'experiment', 'report'];
 
 function containsText(q) {
   return { contains: q, mode: 'insensitive' };
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlight(text, keyword) {
+  const raw = String(text || '');
+  if (!keyword) return raw;
+  const safeKeyword = escapeRegExp(keyword.trim());
+  if (!safeKeyword) return raw;
+
+  const parts = raw.split(new RegExp(`(${safeKeyword})`, 'ig'));
+  return parts.map((part, index) => {
+    if (part.toLowerCase() === keyword.toLowerCase()) {
+      return (
+        <mark key={`${part}-${index}`} style={{ background: '#fef08a', padding: '0 2px', borderRadius: 3 }}>
+          {part}
+        </mark>
+      );
+    }
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
 }
 
 export default async function SearchPage({ searchParams }) {
@@ -50,6 +74,35 @@ export default async function SearchPage({ searchParams }) {
     }
   }
 
+  let recommendedPapers = [];
+  let recommendedReports = [];
+
+  if (!q) {
+    recommendedPapers = await prisma.paper.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      select: { id: true, title: true, summaryJson: true, venueTier: true, source: true },
+    });
+
+    const [dailyRecent, weeklyRecent] = await Promise.all([
+      prisma.dailyReport.findMany({
+        orderBy: { generatedAt: 'desc' },
+        take: 4,
+        select: { id: true, dayKey: true, contentShort: true, contentFull: true },
+      }),
+      prisma.weeklyReport.findMany({
+        orderBy: { generatedAt: 'desc' },
+        take: 4,
+        select: { id: true, weekKey: true, contentMd: true },
+      }),
+    ]);
+
+    recommendedReports = [
+      ...dailyRecent.map((r) => ({ id: `daily-${r.id}`, type: '日报', key: r.dayKey, preview: r.contentShort || r.contentFull || '' })),
+      ...weeklyRecent.map((r) => ({ id: `weekly-${r.id}`, type: '周报', key: r.weekKey, preview: r.contentMd || '' })),
+    ].slice(0, 8);
+  }
+
   return (
     <main style={{ maxWidth: 1100, margin: '24px auto', padding: 24 }}>
       <h2 style={{ marginTop: 0 }}>全局搜索</h2>
@@ -64,23 +117,88 @@ export default async function SearchPage({ searchParams }) {
         <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 0, borderRadius: 8, padding: '10px 14px' }}>搜索</button>
       </form>
 
-      {!q ? <p style={{ color: '#6b7280' }}>输入关键词后开始搜索。</p> : null}
+      {!q ? (
+        <section style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb', marginBottom: 14 }}>
+          <h3 style={{ margin: '0 0 8px' }}>推荐（最近更新）</h3>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>最近文献</div>
+              {recommendedPapers.length ? (
+                recommendedPapers.map((p) => {
+                  const quality = getPaperQuality(p);
+                  return (
+                    <div key={p.id} style={{ padding: '6px 0', borderTop: '1px solid #edf2f7' }}>
+                      <Link href={`/papers?quality=${quality}`} style={{ color: '#1d4ed8', textDecoration: 'none' }}>
+                        {p.title}
+                      </Link>
+                      <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 12 }}>→ {qualityLabel(quality)}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ color: '#6b7280' }}>暂无推荐文献</div>
+              )}
+            </div>
+
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>最近报告</div>
+              {recommendedReports.length ? (
+                recommendedReports.map((r) => (
+                  <details key={r.id} style={{ padding: '6px 0', borderTop: '1px solid #edf2f7' }}>
+                    <summary style={{ cursor: 'pointer' }}>
+                      <strong>{r.type}</strong>：{r.key}
+                    </summary>
+                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: 13 }}>{String(r.preview).slice(0, 200) || '暂无摘要'}</div>
+                  </details>
+                ))
+              ) : (
+                <div style={{ color: '#6b7280' }}>暂无推荐报告</div>
+              )}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {q ? (
         <div style={{ display: 'grid', gap: 12 }}>
           <section style={{ background: '#fff', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
             <h3 style={{ margin: '0 0 8px' }}>文献（{papers.length}）</h3>
-            {papers.length ? papers.map((p) => <div key={p.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>{p.title}</div>) : <div style={{ color: '#6b7280' }}>无匹配结果</div>}
+            {papers.length ? (
+              papers.map((p) => {
+                const quality = getPaperQuality(p);
+                return (
+                  <div key={p.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>
+                    <Link href={`/papers?quality=${quality}`} style={{ color: '#1d4ed8', textDecoration: 'none' }}>
+                      {highlight(p.title, q)}
+                    </Link>
+                    <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 12 }}>→ {qualityLabel(quality)}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div style={{ color: '#6b7280' }}>无匹配结果</div>
+            )}
           </section>
 
           <section style={{ background: '#fff', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
             <h3 style={{ margin: '0 0 8px' }}>实验（{experiments.length}）</h3>
-            {experiments.length ? experiments.map((e) => <div key={e.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>{e.name}</div>) : <div style={{ color: '#6b7280' }}>无匹配结果</div>}
+            {experiments.length ? experiments.map((e) => <div key={e.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>{highlight(e.name, q)}</div>) : <div style={{ color: '#6b7280' }}>无匹配结果</div>}
           </section>
 
           <section style={{ background: '#fff', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
             <h3 style={{ margin: '0 0 8px' }}>报告（{reports.length}）</h3>
-            {reports.length ? reports.map((r) => <div key={r.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}><strong>{r.type}</strong>：{r.key}<div style={{ color: '#6b7280', fontSize: 13 }}>{String(r.preview).slice(0, 160)}</div></div>) : <div style={{ color: '#6b7280' }}>无匹配结果</div>}
+            {reports.length ? (
+              reports.map((r) => (
+                <details key={`${r.type}-${r.id}`} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>
+                  <summary style={{ cursor: 'pointer' }}>
+                    <strong>{r.type}</strong>：{highlight(r.key, q)}
+                  </summary>
+                  <div style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>{highlight(String(r.preview).slice(0, 300), q)}</div>
+                </details>
+              ))
+            ) : (
+              <div style={{ color: '#6b7280' }}>无匹配结果</div>
+            )}
           </section>
         </div>
       ) : null}
