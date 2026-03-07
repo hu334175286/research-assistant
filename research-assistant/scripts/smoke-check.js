@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 const { spawn } = require('node:child_process');
+const net = require('node:net');
 
-const BASE_URL = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3123';
+const DEFAULT_PORT_CANDIDATES = [3000, 3124, 3125];
 const STARTUP_TIMEOUT_MS = Number(process.env.SMOKE_STARTUP_TIMEOUT_MS || 90000);
 const FETCH_TIMEOUT_MS = Number(process.env.SMOKE_FETCH_TIMEOUT_MS || 15000);
 
@@ -11,14 +12,29 @@ const CHECKS = [
   { path: '/dashboard', expectedStatuses: [200] },
   { path: '/papers', expectedStatuses: [200] },
   { path: '/api/papers/auto-fetch', expectedStatuses: [200] },
-  { path: '/api/papers/arxiv?q=wireless%20sensing&maxResults=3', expectedStatuses: [200] }
+  // 依赖外部 arXiv 网络，允许上游抖动时返回 500/502，避免误判本地服务不可用。
+  { path: '/api/papers/arxiv?q=wireless%20sensing&maxResults=3', expectedStatuses: [200, 500, 502] }
 ];
 
 let devServer = null;
-const BASE_PORT = new URL(BASE_URL).port || '80';
+let devServerExited = false;
+let manualStopRequested = false;
+let selectedPort = null;
+let baseUrl = null;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeBaseUrl(input) {
+  const normalized = input.startsWith('http://') || input.startsWith('https://') ? input : `http://${input}`;
+  const url = new URL(normalized);
+  return {
+    url,
+    baseUrl: `${url.protocol}//${url.hostname}:${url.port || (url.protocol === 'https:' ? '443' : '80')}`,
+    port: Number(url.port || (url.protocol === 'https:' ? 443 : 80)),
+    host: url.hostname
+  };
 }
 
 async function fetchWithTimeout(url, timeoutMs) {
@@ -31,24 +47,84 @@ async function fetchWithTimeout(url, timeoutMs) {
   }
 }
 
-async function isServerReady() {
+async function isServerReady(targetBaseUrl) {
   try {
-    const res = await fetchWithTimeout(`${BASE_URL}/`, 2000);
+    const res = await fetchWithTimeout(`${targetBaseUrl}/`, 2000);
     return res.ok;
   } catch {
     return false;
   }
 }
 
-function startDevServer() {
+function isPortFree(port) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    });
+
+    server.listen(port, () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function resolveTarget() {
+  if (process.env.SMOKE_BASE_URL) {
+    const explicit = normalizeBaseUrl(process.env.SMOKE_BASE_URL);
+    const ready = await isServerReady(explicit.baseUrl);
+    return {
+      ...explicit,
+      usingExistingServer: ready,
+      shouldStartServer: !ready,
+      strategy: 'explicit'
+    };
+  }
+
+  for (const port of DEFAULT_PORT_CANDIDATES) {
+    const candidateBaseUrl = `http://127.0.0.1:${port}`;
+    if (await isServerReady(candidateBaseUrl)) {
+      return {
+        baseUrl: candidateBaseUrl,
+        port,
+        usingExistingServer: true,
+        shouldStartServer: false,
+        strategy: 'existing'
+      };
+    }
+
+    if (await isPortFree(port)) {
+      return {
+        baseUrl: candidateBaseUrl,
+        port,
+        usingExistingServer: false,
+        shouldStartServer: true,
+        strategy: 'fallback'
+      };
+    }
+  }
+
+  throw new Error(`端口均不可用（候选：${DEFAULT_PORT_CANDIDATES.join(', ')}）`);
+}
+
+function startDevServer(port) {
   return new Promise((resolve, reject) => {
     const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
     const args = process.platform === 'win32'
-      ? ['/d', '/s', '/c', `npm run dev -- --port ${BASE_PORT}`]
-      : ['run', 'dev', '--', '--port', BASE_PORT];
+      ? ['/d', '/s', '/c', `npm run dev -- --port ${port}`]
+      : ['run', 'dev', '--', '--port', String(port)];
+
+    devServerExited = false;
+    manualStopRequested = false;
     devServer = spawn(command, args, {
       cwd: process.cwd(),
-      env: { ...process.env, PORT: BASE_PORT },
+      env: { ...process.env, PORT: String(port) },
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
@@ -65,7 +141,8 @@ function startDevServer() {
     });
 
     devServer.on('exit', (code, signal) => {
-      if (code !== 0 && signal !== 'SIGTERM') {
+      devServerExited = true;
+      if (!manualStopRequested && code !== 0 && signal !== 'SIGTERM') {
         console.error(`开发服务器提前退出，code=${code}, signal=${signal || 'none'}`);
       }
     });
@@ -74,11 +151,14 @@ function startDevServer() {
   });
 }
 
-async function waitForServer() {
+async function waitForServer(targetBaseUrl) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < STARTUP_TIMEOUT_MS) {
-    if (await isServerReady()) {
+    if (await isServerReady(targetBaseUrl)) {
       return true;
+    }
+    if (devServerExited) {
+      return false;
     }
     await sleep(1000);
   }
@@ -89,7 +169,7 @@ async function runChecks() {
   const results = [];
 
   for (const check of CHECKS) {
-    const url = `${BASE_URL}${check.path}`;
+    const url = `${baseUrl}${check.path}`;
     try {
       const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
       const bodyText = await res.text();
@@ -115,6 +195,9 @@ async function runChecks() {
 
 function printSummary(results) {
   console.log('\n===== Smoke Check Result =====');
+  console.log(`最终使用端口：${selectedPort}`);
+  console.log(`基准地址：${baseUrl}`);
+
   for (const item of results) {
     const mark = item.ok ? '✅' : '❌';
     console.log(`${mark} ${item.url}`);
@@ -131,31 +214,51 @@ function printSummary(results) {
 async function stopDevServer() {
   if (!devServer || devServer.killed) return;
 
+  manualStopRequested = true;
+
   await new Promise((resolve) => {
-    devServer.once('exit', () => resolve());
-    devServer.kill('SIGTERM');
-    setTimeout(() => {
-      if (!devServer.killed) {
-        devServer.kill('SIGKILL');
+    let settled = false;
+    const done = () => {
+      if (!settled) {
+        settled = true;
+        resolve();
       }
-      resolve();
-    }, 5000);
+    };
+
+    devServer.once('exit', done);
+
+    if (process.platform === 'win32') {
+      const killer = spawn('taskkill', ['/PID', String(devServer.pid), '/T', '/F'], {
+        stdio: 'ignore'
+      });
+      killer.once('exit', done);
+    } else {
+      devServer.kill('SIGTERM');
+      setTimeout(() => {
+        if (!devServer.killed) {
+          devServer.kill('SIGKILL');
+        }
+        done();
+      }, 5000);
+    }
   });
 }
 
 (async function main() {
-  const alreadyUp = await isServerReady();
+  const target = await resolveTarget();
+  selectedPort = target.port;
+  baseUrl = target.baseUrl;
 
-  if (!alreadyUp) {
-    console.log(`未检测到可用服务，尝试启动开发服务器：${BASE_URL}`);
-    await startDevServer();
-    const ready = await waitForServer();
+  if (target.usingExistingServer) {
+    console.log(`检测到已有服务，直接执行冒烟检查：${baseUrl}`);
+  } else {
+    console.log(`未检测到可用服务，启动开发服务器：${baseUrl}`);
+    await startDevServer(selectedPort);
+    const ready = await waitForServer(baseUrl);
     if (!ready) {
       await stopDevServer();
-      throw new Error(`服务在 ${STARTUP_TIMEOUT_MS}ms 内未就绪：${BASE_URL}`);
+      throw new Error(`服务在 ${STARTUP_TIMEOUT_MS}ms 内未就绪：${baseUrl}`);
     }
-  } else {
-    console.log(`检测到已有服务，直接执行冒烟检查：${BASE_URL}`);
   }
 
   const results = await runChecks();
@@ -169,6 +272,9 @@ async function stopDevServer() {
   }
 })().catch(async (error) => {
   console.error(`\n❌ 冒烟检查失败：${error.message}`);
+  if (selectedPort) {
+    console.error(`端口信息：${selectedPort}`);
+  }
   await stopDevServer();
   process.exit(1);
 });
