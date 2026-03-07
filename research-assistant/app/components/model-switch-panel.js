@@ -8,14 +8,25 @@ export default function ModelSwitchPanel() {
   const [currentModel, setCurrentModel] = useState('Codex');
   const [status, setStatus] = useState('');
   const [loadingModel, setLoadingModel] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState('尚未执行 verify。');
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/model-switch');
-        const json = await res.json();
-        if (res.ok && json?.currentModel) {
-          setCurrentModel(json.currentModel);
+        const [switchRes, verifyRes] = await Promise.all([
+          fetch('/api/model-switch'),
+          fetch('/api/verify/latest'),
+        ]);
+
+        const switchJson = await switchRes.json();
+        if (switchRes.ok && switchJson?.currentModel) {
+          setCurrentModel(switchJson.currentModel);
+        }
+
+        const latest = await verifyRes.json();
+        if (verifyRes.ok && latest?.ts) {
+          setVerifyStatus(`${latest.ok ? '✅' : '❌'} ${latest.ok ? 'verify 通过' : 'verify 未通过'}（${latest.ts}）`);
         }
       } catch {
         // noop
@@ -45,7 +56,10 @@ export default function ModelSwitchPanel() {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || '切换失败');
+      if (!res.ok) {
+        const detail = [json?.reasonCn, json?.detail].filter(Boolean).join('；');
+        throw new Error(detail || json?.error || '切换失败');
+      }
 
       setCurrentModel(targetModel);
       setStatus(json.message || '模型切换成功');
@@ -53,6 +67,24 @@ export default function ModelSwitchPanel() {
       setStatus(`切换失败：${e.message || String(e)}`);
     } finally {
       setLoadingModel('');
+    }
+  };
+
+  const runVerify = async () => {
+    setVerifyLoading(true);
+    setVerifyStatus('verify 执行中，请稍候...');
+    try {
+      const res = await fetch('/api/verify/run', { method: 'POST' });
+      const s = await res.json();
+      if (s?.ts) {
+        setVerifyStatus(`${s.ok ? '✅' : '❌'} ${s.ok ? 'verify 通过' : 'verify 未通过'}（${s.ts}，耗时 ${Math.round((s.durationMs || 0) / 1000)}s）`);
+      } else {
+        setVerifyStatus(res.ok ? '✅ verify 完成。' : '❌ verify 失败。');
+      }
+    } catch (e) {
+      setVerifyStatus(`❌ verify 请求失败：${e.message || String(e)}`);
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -84,6 +116,25 @@ export default function ModelSwitchPanel() {
             </button>
           );
         })}
+      </div>
+
+      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          onClick={runVerify}
+          disabled={verifyLoading}
+          style={{
+            padding: '8px 14px',
+            borderRadius: 8,
+            border: '1px solid #0891b2',
+            background: verifyLoading ? '#cffafe' : '#06b6d4',
+            color: verifyLoading ? '#0e7490' : '#fff',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}
+        >
+          {verifyLoading ? 'verify 执行中...' : '一键执行 verify'}
+        </button>
+        <span style={{ color: '#334155', fontSize: 13 }}>{verifyStatus}</span>
       </div>
 
       <div style={{ marginTop: 10, color: '#6b7280', fontSize: 13 }}>

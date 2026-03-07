@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { getRecommendedBaseUrl } from '@/lib/recommended-base-url';
 import ModelSwitchPanel from '@/app/components/model-switch-panel';
 import { getModelHealthSummary } from '@/lib/model-health';
+import { getLatestModelSwitchEvent } from '@/lib/model-switch-log';
+import { readLatestVerifyResult } from '@/lib/verify-runner';
+import { readCurrentModel } from '@/lib/model-runtime-status';
 
 const healthColorMap = {
   green: { bg: '#dcfce7', fg: '#166534', border: '#86efac', text: '绿色' },
@@ -10,10 +13,19 @@ const healthColorMap = {
 };
 
 export default async function QuickPage() {
-  const [recommendedInfo, modelHealthList] = await Promise.all([
+  const [recommendedInfo, modelHealthList, latestSwitchEvent, currentModel] = await Promise.all([
     getRecommendedBaseUrl(),
     getModelHealthSummary(),
+    getLatestModelSwitchEvent(),
+    readCurrentModel(),
   ]);
+
+  let latestVerifyStatus = null;
+  try {
+    latestVerifyStatus = await readLatestVerifyResult();
+  } catch {
+    latestVerifyStatus = null;
+  }
 
   const { recommended, primary, fallback, isPrimaryAvailable } = recommendedInfo;
 
@@ -53,6 +65,32 @@ export default async function QuickPage() {
         <div style={{ fontWeight: 700 }}>推荐访问基址：{recommended}</div>
         <div style={{ marginTop: 6, color: '#1e3a8a' }}>
           检测结果：{isPrimaryAvailable ? `${primary} 可访问（优先）` : `${primary} 不可访问，已切换推荐 ${fallback}`}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 18 }}>
+        <h2>系统状态总览</h2>
+        <div style={gridStyle}>
+          <div style={cardStyle}>
+            <div style={metaLabelStyle}>模型当前</div>
+            <div style={metaValueStyle}>{currentModel?.label || 'unknown'}</div>
+            <small style={metaHintStyle}>{currentModel?.model || '未读取到模型 ID'}</small>
+          </div>
+          <div style={cardStyle}>
+            <div style={metaLabelStyle}>最近切换</div>
+            <div style={metaValueStyle}>{latestSwitchEvent ? `${latestSwitchEvent.from || '-'} → ${latestSwitchEvent.to || '-'}` : '暂无记录'}</div>
+            <small style={metaHintStyle}>{latestSwitchEvent?.ts || '尚未发生手动切换'}</small>
+          </div>
+          <div style={cardStyle}>
+            <div style={metaLabelStyle}>推荐基址</div>
+            <div style={metaValueStyle}>{recommended}</div>
+            <small style={metaHintStyle}>{isPrimaryAvailable ? '主基址可访问' : '主基址异常，已自动推荐备用基址'}</small>
+          </div>
+          <div style={cardStyle}>
+            <div style={metaLabelStyle}>验证状态</div>
+            <div style={metaValueStyle}>{latestVerifyStatus?.ok ? '✅ verify 通过' : latestVerifyStatus ? '❌ verify 未通过' : '未执行 verify'}</div>
+            <small style={metaHintStyle}>{latestVerifyStatus?.ts || '点击下方按钮可一键触发 verify'}</small>
+          </div>
         </div>
       </section>
 
@@ -144,4 +182,22 @@ const healthCardStyle = {
   border: '1px solid #e2e8f0',
   borderRadius: 10,
   padding: 14,
+};
+
+const metaLabelStyle = {
+  fontSize: 13,
+  color: '#64748b',
+};
+
+const metaValueStyle = {
+  marginTop: 6,
+  fontWeight: 700,
+  color: '#0f172a',
+  wordBreak: 'break-all',
+};
+
+const metaHintStyle = {
+  display: 'block',
+  marginTop: 6,
+  color: '#64748b',
 };

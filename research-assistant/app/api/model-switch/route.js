@@ -1,27 +1,31 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { MODEL_SWITCH_LOG_PATH } from '@/lib/model-switch-log';
+import { MODEL_MAP, readCurrentModel } from '@/lib/model-runtime-status';
 
 const execFileAsync = promisify(execFile);
-const MODEL_SWITCH_LOG_PATH = path.join(process.cwd(), 'data', 'model-switch-log.jsonl');
 
-const MODEL_MAP = {
-  Codex: 'openai-codex/gpt-5.3-codex',
-  QwenCoder: 'qwen-portal/coder-model',
-  Kimi: 'moonshot/kimi-k2.5',
-};
+function toChineseReason(error) {
+  const raw = `${error?.stderr || ''}\n${error?.stdout || ''}\n${error?.message || ''}`.toLowerCase();
 
-async function readCurrentModel() {
-  try {
-    const { stdout } = await execFileAsync('openclaw', ['models', 'status', '--json'], { windowsHide: true });
-    const parsed = JSON.parse(stdout || '{}');
-    const model = parsed?.resolvedDefault || parsed?.defaultModel || '';
-    const fromLabel = Object.entries(MODEL_MAP).find(([, id]) => id === model)?.[0] || model || 'unknown';
-    return { model, label: fromLabel };
-  } catch {
-    return { model: '', label: 'unknown' };
+  if (raw.includes('401') || raw.includes('unauthorized') || raw.includes('auth')) {
+    return '认证失败：请检查模型供应商的 API Key 或登录状态。';
   }
+  if (raw.includes('429') || raw.includes('rate limit') || raw.includes('quota')) {
+    return '配额或限流：请求过于频繁或额度不足，请稍后重试。';
+  }
+  if (raw.includes('timeout') || raw.includes('timed out')) {
+    return '请求超时：模型服务响应过慢，请稍后重试。';
+  }
+  if (raw.includes('network') || raw.includes('enotfound') || raw.includes('econnrefused')) {
+    return '网络异常：无法连接模型服务，请检查网络或代理。';
+  }
+  if (raw.includes('not found') || raw.includes('unknown model')) {
+    return '模型不存在：目标模型 ID 无效或当前环境未配置。';
+  }
+
+  return '未知错误：请查看错误详情。';
 }
 
 export async function GET() {
@@ -49,7 +53,19 @@ export async function POST(req) {
   const fromModel = payload?.fromModel || current.label || 'unknown';
   const targetModelId = MODEL_MAP[targetModel];
 
-  await execFileAsync('openclaw', ['models', 'set', targetModelId], { windowsHide: true });
+  try {
+    await execFileAsync('openclaw', ['models', 'set', targetModelId], { windowsHide: true });
+  } catch (error) {
+    const detail = `${error?.stderr || error?.stdout || error?.message || ''}`.trim();
+    return Response.json({
+      ok: false,
+      error: '模型切换失败',
+      reasonCn: toChineseReason(error),
+      detail,
+      targetModel,
+      targetModelId,
+    }, { status: 500 });
+  }
 
   const event = {
     ts: new Date().toISOString(),
@@ -60,7 +76,7 @@ export async function POST(req) {
     targetModelId,
   };
 
-  await fs.mkdir(path.dirname(MODEL_SWITCH_LOG_PATH), { recursive: true });
+  await fs.mkdir('data', { recursive: true });
   await fs.appendFile(MODEL_SWITCH_LOG_PATH, `${JSON.stringify(event)}\n`, 'utf8');
 
   const message = `切换提示：from=${event.from}; to=${event.to}; reason=${event.reason}; scope=${event.scope}`;
