@@ -1,25 +1,56 @@
 {
-  "version": "v1",
+  "version": "v2",
   "routes": {
     "code_execution": {
       "primary": "openai-codex/gpt-5.3-codex",
-      "fallbacks": ["moonshot/kimi-k2.5"]
+      "fallbacks": [
+        "qwen-portal/coder-model",
+        "moonshot/kimi-k2.5"
+      ]
     },
     "literature_gap": {
-      "primary": "moonshot/kimi-k2.5",
-      "fallbacks": ["openrouter/deepseek/deepseek-r1"]
+      "primary": "qwen-portal/coder-model",
+      "fallbacks": [
+        "moonshot/kimi-k2.5",
+        "openrouter/deepseek/deepseek-r1"
+      ]
     },
     "daily_weekly": {
-      "primary": "openrouter/deepseek/deepseek-chat",
-      "fallbacks": ["moonshot/kimi-k2.5"]
+      "primary": "qwen-portal/coder-model",
+      "fallbacks": [
+        "openrouter/deepseek/deepseek-chat",
+        "moonshot/kimi-k2.5"
+      ]
     },
     "paper_writing": {
       "primary": "moonshot/kimi-k2.5",
-      "fallbacks": ["openrouter/deepseek/deepseek-r1"]
+      "fallbacks": [
+        "qwen-portal/coder-model",
+        "openrouter/deepseek/deepseek-r1"
+      ]
+    },
+    "paper_screening": {
+      "primary": "qwen-portal/coder-model",
+      "fallbacks": [
+        "moonshot/kimi-k2.5"
+      ]
+    },
+    "figure_understanding": {
+      "primary": "qwen-portal/vision-model",
+      "fallbacks": [
+        "qwen-portal/coder-model",
+        "moonshot/kimi-k2.5"
+      ]
+    },
+    "quick_iter": {
+      "primary": "qwen-portal/coder-model",
+      "fallbacks": [
+        "openai-codex/gpt-5.3-codex"
+      ]
     }
   },
   "defaults": {
-    "timeoutMs": 90000,
-    "maxRetries": 1
+    "timeoutMs": 120000,
+    "maxRetries": 2
   }
 }
