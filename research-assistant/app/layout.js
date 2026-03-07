@@ -14,6 +14,7 @@ const navs = [
   ['实验', '/experiments'],
   ['日报', '/reports/daily'],
   ['周报', '/reports/weekly'],
+  ['快捷页', '/quick'],
 ];
 
 export default function RootLayout({ children }) {

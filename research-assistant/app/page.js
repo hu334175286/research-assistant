@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import ModelRouteSelector from '@/app/components/model-route-selector';
+import { listRecentFailoverEvents } from '@/lib/model-failover-events';
 
 export default async function HomePage() {
-  const [paperCount, expCount, taskCount] = await Promise.all([
+  const [paperCount, expCount, taskCount, failoverEvents] = await Promise.all([
     prisma.paper.count(),
     prisma.experiment.count(),
     prisma.task.count({ where: { status: { in: ['todo', 'doing', 'blocked'] } } }),
+    listRecentFailoverEvents(10),
   ]);
 
   return (
@@ -38,6 +40,40 @@ export default async function HomePage() {
         </ul>
       </section>
 
+      <section style={{ marginTop: 18, background: '#fff', borderRadius: 12, padding: 16 }}>
+        <h3 style={{ marginTop: 0 }}>最近模型切换事件</h3>
+        {failoverEvents.length ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
+                  <th style={th}>时间</th>
+                  <th style={th}>任务类型</th>
+                  <th style={th}>From</th>
+                  <th style={th}>To</th>
+                  <th style={th}>原因</th>
+                  <th style={th}>范围</th>
+                </tr>
+              </thead>
+              <tbody>
+                {failoverEvents.map((event, idx) => (
+                  <tr key={`${event.ts || 'na'}-${idx}`} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={td}>{event.ts || '-'}</td>
+                    <td style={td}>{event.taskType || '-'}</td>
+                    <td style={td}>{event.from || '-'}</td>
+                    <td style={td}>{event.to || '-'}</td>
+                    <td style={td}>{event.reason || '-'}</td>
+                    <td style={td}>{event.scope || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: '#666', marginBottom: 0 }}>暂无切换事件。</p>
+        )}
+      </section>
+
       <ModelRouteSelector />
     </main>
   );
@@ -45,6 +81,8 @@ export default async function HomePage() {
 
 const btn = { background: '#fff', color: '#1d4ed8', padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontWeight: 600 };
 const btnGhost = { background: 'rgba(255,255,255,.16)', color: '#fff', padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, border: '1px solid rgba(255,255,255,.35)' };
+const th = { padding: '8px 10px', fontWeight: 600, color: '#374151' };
+const td = { padding: '8px 10px', color: '#111827', whiteSpace: 'nowrap' };
 
 function Card({ title, value }) {
   return (
