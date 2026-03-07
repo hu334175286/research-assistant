@@ -18,6 +18,14 @@
   - `daily_weekly`
   - `paper_writing`
 
+## 已实现（D3-任务与看板联动）
+- 任务 API：`/api/tasks`
+  - `GET /api/tasks?status=todo&take=20`
+  - `POST /api/tasks`
+  - `PATCH /api/tasks`
+- 看板汇总 API：`/api/dashboard-summary`
+- Dashboard 改为动态统计：待办任务、近7天文献、近7天实验、本周周报状态
+
 ## 本地启动
 ```bash
 cp .env.example .env
