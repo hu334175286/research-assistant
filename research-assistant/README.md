@@ -18,6 +18,14 @@
   - `daily_weekly`
   - `paper_writing`
 
+## 已实现（D3-可用优先自动抓取链路）
+- 研究方向配置：`config/research-focus.json`
+- 自动抓取脚本：`npm run papers:auto-fetch`
+- 自动抓取API：`/api/papers/auto-fetch`
+- 抓取源：arXiv（按研究方向关键词 + 类别过滤 + 去重入库）
+- 仪表盘新增：今日自动抓取数 + 最新自动抓取Top5
+- 调度器新增：每30分钟自动抓取一次
+
 ## 已实现（D3-任务与看板联动）
 - 任务 API：`/api/tasks`
   - `GET /api/tasks?status=todo&take=20`

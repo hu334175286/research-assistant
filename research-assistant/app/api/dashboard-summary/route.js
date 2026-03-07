@@ -10,11 +10,16 @@ function weekKey(date = new Date()) {
 }
 
 export async function GET() {
-  const [todoTasks, weekExps, weekPapers, latestWeekly] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [todoTasks, weekExps, weekPapers, latestWeekly, todayAutoFetched, latestAutoFetched] = await Promise.all([
     prisma.task.count({ where: { status: { in: ['todo', 'doing', 'blocked'] } } }),
     prisma.experiment.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } } }),
     prisma.paper.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } } }),
     prisma.weeklyReport.findFirst({ orderBy: { generatedAt: 'desc' } }),
+    prisma.paper.count({ where: { source: 'arXiv:auto', createdAt: { gte: todayStart } } }),
+    prisma.paper.findMany({ where: { source: 'arXiv:auto' }, orderBy: { createdAt: 'desc' }, take: 5 }),
   ]);
 
   const currentWeek = weekKey();
@@ -27,5 +32,7 @@ export async function GET() {
     weeklyStatus,
     currentWeek,
     latestWeekly,
+    todayAutoFetched,
+    latestAutoFetched,
   });
 }

@@ -1,25 +1,51 @@
 import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
 
-const links = [
-  ['Dashboard', '/dashboard'],
-  ['Papers', '/papers'],
-  ['Experiments', '/experiments'],
-  ['Weekly Reports', '/reports/weekly'],
-  ['Daily Reports', '/reports/daily'],
-];
+export default async function HomePage() {
+  const [paperCount, expCount, taskCount] = await Promise.all([
+    prisma.paper.count(),
+    prisma.experiment.count(),
+    prisma.task.count({ where: { status: { in: ['todo', 'doing', 'blocked'] } } }),
+  ]);
 
-export default function HomePage() {
   return (
-    <main style={{ maxWidth: 960, margin: '40px auto', padding: 24 }}>
-      <h1>个人研究助手 V1</h1>
-      <p>当前阶段：D1 骨架完成，后续逐步接入真实数据流。</p>
-      <ul>
-        {links.map(([name, href]) => (
-          <li key={href} style={{ margin: '8px 0' }}>
-            <Link href={href}>{name}</Link>
-          </li>
-        ))}
-      </ul>
+    <main style={{ maxWidth: 1100, margin: '24px auto', padding: 24 }}>
+      <section style={{ background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: '#fff', borderRadius: 16, padding: 24 }}>
+        <h1 style={{ margin: 0 }}>个人研究助手门户</h1>
+        <p style={{ opacity: 0.95 }}>聚焦“智能物联感知与处理”：文献收集、实验记录、日报周报、模型路由。</p>
+        <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+          <Link href="/papers" style={btn}>去文献库</Link>
+          <Link href="/dashboard" style={btnGhost}>打开研究指挥台</Link>
+        </div>
+      </section>
+
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 18 }}>
+        <Card title="文献总量" value={String(paperCount)} />
+        <Card title="实验总量" value={String(expCount)} />
+        <Card title="待办任务" value={String(taskCount)} />
+      </section>
+
+      <section style={{ marginTop: 18, background: '#fff', borderRadius: 12, padding: 16 }}>
+        <h3 style={{ marginTop: 0 }}>快速入口</h3>
+        <ul style={{ lineHeight: 1.9 }}>
+          <li><Link href="/papers">文献管理（含 arXiv 抓取接口）</Link></li>
+          <li><Link href="/experiments">实验记录</Link></li>
+          <li><Link href="/reports/daily">日报查看</Link> / <Link href="/reports/weekly">周报查看</Link></li>
+          <li><a href="/api/model-route?taskType=literature_gap">模型路由示例 API</a></li>
+        </ul>
+      </section>
     </main>
+  );
+}
+
+const btn = { background: '#fff', color: '#1d4ed8', padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontWeight: 600 };
+const btnGhost = { background: 'rgba(255,255,255,.16)', color: '#fff', padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, border: '1px solid rgba(255,255,255,.35)' };
+
+function Card({ title, value }) {
+  return (
+    <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
+      <div style={{ color: '#666', fontSize: 13 }}>{title}</div>
+      <div style={{ fontSize: 30, fontWeight: 700 }}>{value}</div>
+    </div>
   );
 }

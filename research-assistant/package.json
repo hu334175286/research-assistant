@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "report:daily": "node scripts/generate-daily-report.js",
     "report:weekly": "node scripts/generate-weekly-report.js",
+    "papers:auto-fetch": "node scripts/fetch-papers.js",
     "scheduler": "node scripts/scheduler.js"
   },
   "dependencies": {

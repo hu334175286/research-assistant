@@ -1,0 +1,36 @@
+{
+  "version": "v1",
+  "enabled": true,
+  "fetchEveryMinutes": 30,
+  "maxResultsPerQuery": 12,
+  "minRelevanceScore": 2,
+  "topics": [
+    {
+      "name": "无线感知与定位",
+      "query": "wireless sensing localization",
+      "keywords": ["wireless sensing", "rf sensing", "wifi sensing", "mmwave", "localization", "tracking"],
+      "categories": ["cs.NI", "cs.CV", "cs.RO", "eess.SP"]
+    },
+    {
+      "name": "智能物联边缘智能",
+      "query": "edge intelligence iot perception",
+      "keywords": ["iot", "edge intelligence", "tinyml", "sensor fusion", "ubiquitous computing"],
+      "categories": ["cs.DC", "cs.NI", "cs.AI", "cs.LG"]
+    }
+  ],
+  "venueKeywords": [
+    "mobicom",
+    "mobisys",
+    "sensys",
+    "ipsn",
+    "ubicomp",
+    "imwut",
+    "nsdi",
+    "infocom",
+    "ton",
+    "tmc",
+    "iot journal",
+    "tosn"
+  ],
+  "excludeKeywords": ["survey", "tutorial", "call for papers"]
+}

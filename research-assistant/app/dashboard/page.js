@@ -10,11 +10,16 @@ function weekKey(date = new Date()) {
 }
 
 export default async function DashboardPage() {
-  const [todoTasks, weekExps, weekPapers, latestWeekly] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [todoTasks, weekExps, weekPapers, latestWeekly, todayAutoFetched, latestAutoFetched] = await Promise.all([
     prisma.task.count({ where: { status: { in: ['todo', 'doing', 'blocked'] } } }),
     prisma.experiment.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } } }),
     prisma.paper.count({ where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } } }),
     prisma.weeklyReport.findFirst({ orderBy: { generatedAt: 'desc' } }),
+    prisma.paper.count({ where: { source: 'arXiv:auto', createdAt: { gte: todayStart } } }),
+    prisma.paper.findMany({ where: { source: 'arXiv:auto' }, orderBy: { createdAt: 'desc' }, take: 5 }),
   ]);
 
   const thisWeek = weekKey();
@@ -24,12 +29,22 @@ export default async function DashboardPage() {
     <main style={{ maxWidth: 1100, margin: '20px auto', padding: 24 }}>
       <h2>研究指挥台</h2>
       <p>今日重点：文献导入、实验记录、日报预览。</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
         <Card title="待办任务" value={String(todoTasks)} />
         <Card title="近7天文献" value={String(weekPapers)} />
         <Card title="近7天实验" value={String(weekExps)} />
         <Card title="周报状态" value={weeklyStatus} />
+        <Card title="今日自动抓取" value={String(todayAutoFetched)} />
       </div>
+
+      <section style={{ marginTop: 16, background: '#fff', borderRadius: 12, padding: 16 }}>
+        <h3 style={{ marginTop: 0 }}>最新自动抓取（Top 5）</h3>
+        <ol>
+          {latestAutoFetched.map((p) => (
+            <li key={p.id} style={{ marginBottom: 8 }}>{p.title}</li>
+          ))}
+        </ol>
+      </section>
     </main>
   );
 }
