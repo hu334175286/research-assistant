@@ -12,15 +12,24 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function highlight(text, keyword) {
-  const raw = String(text || '');
-  if (!keyword) return raw;
-  const safeKeyword = escapeRegExp(keyword.trim());
-  if (!safeKeyword) return raw;
+function getKeywords(query) {
+  return Array.from(new Set(String(query || '').trim().split(/\s+/).filter(Boolean))).slice(0, 8);
+}
 
-  const parts = raw.split(new RegExp(`(${safeKeyword})`, 'ig'));
+function highlight(text, query) {
+  const raw = String(text || '');
+  const keywords = getKeywords(query);
+  if (!keywords.length) return raw;
+
+  const escaped = keywords.map(escapeRegExp).filter(Boolean);
+  if (!escaped.length) return raw;
+
+  const lowerSet = new Set(keywords.map((k) => k.toLowerCase()));
+  const regex = new RegExp(`(${escaped.join('|')})`, 'ig');
+  const parts = raw.split(regex);
+
   return parts.map((part, index) => {
-    if (part.toLowerCase() === keyword.toLowerCase()) {
+    if (lowerSet.has(part.toLowerCase())) {
       return (
         <mark key={`${part}-${index}`} style={{ background: '#fef08a', padding: '0 2px', borderRadius: 3 }}>
           {part}
@@ -29,6 +38,12 @@ function highlight(text, keyword) {
     }
     return <span key={`${part}-${index}`}>{part}</span>;
   });
+}
+
+function toPreview(text, maxLen = 280) {
+  const s = String(text || '').trim();
+  if (!s) return '暂无摘要';
+  return s.length > maxLen ? `${s.slice(0, maxLen)}...` : s;
 }
 
 export default async function SearchPage({ searchParams }) {
@@ -74,11 +89,11 @@ export default async function SearchPage({ searchParams }) {
     }
   }
 
-  let recommendedPapers = [];
-  let recommendedReports = [];
+  let recentPapers = [];
+  let recentReports = [];
 
   if (!q) {
-    recommendedPapers = await prisma.paper.findMany({
+    recentPapers = await prisma.paper.findMany({
       orderBy: { createdAt: 'desc' },
       take: 6,
       select: { id: true, title: true, summaryJson: true, venueTier: true, source: true },
@@ -97,7 +112,7 @@ export default async function SearchPage({ searchParams }) {
       }),
     ]);
 
-    recommendedReports = [
+    recentReports = [
       ...dailyRecent.map((r) => ({ id: `daily-${r.id}`, type: '日报', key: r.dayKey, preview: r.contentShort || r.contentFull || '' })),
       ...weeklyRecent.map((r) => ({ id: `weekly-${r.id}`, type: '周报', key: r.weekKey, preview: r.contentMd || '' })),
     ].slice(0, 8);
@@ -119,12 +134,12 @@ export default async function SearchPage({ searchParams }) {
 
       {!q ? (
         <section style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb', marginBottom: 14 }}>
-          <h3 style={{ margin: '0 0 8px' }}>推荐（最近更新）</h3>
+          <h3 style={{ margin: '0 0 8px' }}>最近内容</h3>
           <div style={{ display: 'grid', gap: 12 }}>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>最近文献</div>
-              {recommendedPapers.length ? (
-                recommendedPapers.map((p) => {
+              {recentPapers.length ? (
+                recentPapers.map((p) => {
                   const quality = getPaperQuality(p);
                   return (
                     <div key={p.id} style={{ padding: '6px 0', borderTop: '1px solid #edf2f7' }}>
@@ -136,23 +151,23 @@ export default async function SearchPage({ searchParams }) {
                   );
                 })
               ) : (
-                <div style={{ color: '#6b7280' }}>暂无推荐文献</div>
+                <div style={{ color: '#6b7280' }}>暂无最近文献</div>
               )}
             </div>
 
             <div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>最近报告</div>
-              {recommendedReports.length ? (
-                recommendedReports.map((r) => (
+              {recentReports.length ? (
+                recentReports.map((r) => (
                   <details key={r.id} style={{ padding: '6px 0', borderTop: '1px solid #edf2f7' }}>
                     <summary style={{ cursor: 'pointer' }}>
                       <strong>{r.type}</strong>：{r.key}
                     </summary>
-                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: 13 }}>{String(r.preview).slice(0, 200) || '暂无摘要'}</div>
+                    <div style={{ marginTop: 6, color: '#6b7280', fontSize: 13 }}>{toPreview(r.preview, 220)}</div>
                   </details>
                 ))
               ) : (
-                <div style={{ color: '#6b7280' }}>暂无推荐报告</div>
+                <div style={{ color: '#6b7280' }}>暂无最近报告</div>
               )}
             </div>
           </div>
@@ -172,6 +187,12 @@ export default async function SearchPage({ searchParams }) {
                       {highlight(p.title, q)}
                     </Link>
                     <span style={{ marginLeft: 8, color: '#6b7280', fontSize: 12 }}>→ {qualityLabel(quality)}</span>
+                    {(p.source || p.tags) ? (
+                      <div style={{ marginTop: 4, color: '#6b7280', fontSize: 13 }}>
+                        {p.source ? <span>来源：{highlight(p.source, q)}</span> : null}
+                        {p.tags ? <span style={{ marginLeft: 8 }}>标签：{highlight(p.tags, q)}</span> : null}
+                      </div>
+                    ) : null}
                   </div>
                 );
               })
@@ -182,7 +203,19 @@ export default async function SearchPage({ searchParams }) {
 
           <section style={{ background: '#fff', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
             <h3 style={{ margin: '0 0 8px' }}>实验（{experiments.length}）</h3>
-            {experiments.length ? experiments.map((e) => <div key={e.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>{highlight(e.name, q)}</div>) : <div style={{ color: '#6b7280' }}>无匹配结果</div>}
+            {experiments.length ? (
+              experiments.map((e) => (
+                <details key={e.id} style={{ padding: '6px 0', borderTop: '1px solid #f1f5f9' }}>
+                  <summary style={{ cursor: 'pointer' }}>{highlight(e.name, q)}</summary>
+                  <div style={{ marginTop: 6, color: '#6b7280', fontSize: 13 }}>
+                    <div><strong>假设：</strong>{highlight(toPreview(e.hypothesis, 200), q)}</div>
+                    <div style={{ marginTop: 4 }}><strong>结论：</strong>{highlight(toPreview(e.conclusion, 220), q)}</div>
+                  </div>
+                </details>
+              ))
+            ) : (
+              <div style={{ color: '#6b7280' }}>无匹配结果</div>
+            )}
           </section>
 
           <section style={{ background: '#fff', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
@@ -193,7 +226,7 @@ export default async function SearchPage({ searchParams }) {
                   <summary style={{ cursor: 'pointer' }}>
                     <strong>{r.type}</strong>：{highlight(r.key, q)}
                   </summary>
-                  <div style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>{highlight(String(r.preview).slice(0, 300), q)}</div>
+                  <div style={{ color: '#6b7280', fontSize: 13, marginTop: 6 }}>{highlight(toPreview(r.preview, 320), q)}</div>
                 </details>
               ))
             ) : (

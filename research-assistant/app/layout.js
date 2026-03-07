@@ -10,6 +10,7 @@ const navs = [
   ['指挥台', '/dashboard'],
   ['文献库', '/papers'],
   ['搜索', '/search'],
+  ['可视化', '/visual-insights'],
   ['实验', '/experiments'],
   ['日报', '/reports/daily'],
   ['周报', '/reports/weekly'],

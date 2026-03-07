@@ -55,12 +55,26 @@ export default async function PapersPage({ searchParams }) {
           );
         })}
         <span style={{ color: '#6b7280', fontSize: 13 }}>共 {papers.length} 条</span>
-        <a
-          href="/api/papers/bibtex/export"
-          style={{ marginLeft: 'auto', fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
-        >
-          导出全部 BibTeX
-        </a>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <a
+            href={`/api/papers/bibtex/export?quality=${qualityFilter}`}
+            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
+          >
+            导出当前筛选
+          </a>
+          <a
+            href="/api/papers/bibtex/export?quality=high&yearFrom=2023&limit=100"
+            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
+          >
+            导出高质量(2023+)
+          </a>
+          <a
+            href="/api/papers/bibtex/export"
+            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
+          >
+            导出全部 BibTeX
+          </a>
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
@@ -72,6 +86,7 @@ export default async function PapersPage({ searchParams }) {
               <th style={{ padding: 12, width: 120 }}>质量层级</th>
               <th style={{ padding: 12, width: 180 }}>来源</th>
               <th style={{ padding: 12, width: 130 }}>引用导出</th>
+              <th style={{ padding: 12, width: 120 }}>图表分析</th>
             </tr>
           </thead>
           <tbody>
@@ -91,12 +106,17 @@ export default async function PapersPage({ searchParams }) {
                       导出 BibTeX
                     </a>
                   </td>
+                  <td style={{ padding: 12 }}>
+                    <a href={`/api/papers/${p.id}/figures`} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>
+                      图表分析
+                    </a>
+                  </td>
                 </tr>
               );
             })}
             {!papers.length ? (
               <tr>
-                <td style={{ padding: 16, color: '#6b7280' }} colSpan={5}>
+                <td style={{ padding: 16, color: '#6b7280' }} colSpan={6}>
                   当前筛选条件下暂无文献。
                 </td>
               </tr>

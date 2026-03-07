@@ -31,6 +31,7 @@ export default async function HomePage() {
         <ul style={{ lineHeight: 1.9 }}>
           <li><Link href="/papers">文献管理（含 arXiv 抓取接口）</Link></li>
           <li><Link href="/experiments">实验记录</Link></li>
+          <li><Link href="/visual-insights">科研可视化看板</Link></li>
           <li><Link href="/reports/daily">日报查看</Link> / <Link href="/reports/weekly">周报查看</Link></li>
           <li><a href="/api/model-route?taskType=literature_gap">模型路由示例 API</a></li>
         </ul>
