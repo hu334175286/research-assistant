@@ -32,6 +32,7 @@ export default async function HomePage() {
         <h3 style={{ marginTop: 0 }}>快速入口</h3>
         <ul style={{ lineHeight: 1.9 }}>
           <li><Link href="/papers">文献管理（含 arXiv 抓取接口）</Link></li>
+          <li><Link href="/datasets">数据集中心</Link></li>
           <li><Link href="/experiments">实验记录</Link></li>
           <li><Link href="/visual-insights">科研可视化看板</Link></li>
           <li><Link href="/reports/daily">日报查看</Link> / <Link href="/reports/weekly">周报查看</Link></li>

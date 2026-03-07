@@ -21,14 +21,38 @@ model Paper {
 }
 
 model Experiment {
-  id          String   @id @default(cuid())
+  id                     String   @id @default(cuid())
+  name                   String
+  hypothesis             String?
+  configJson             String?
+  metricsJson            String?
+  conclusion             String?
+  datasetId              String?
+  datasetVersionSnapshot String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  dataset Dataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+
+  @@index([datasetId])
+}
+
+model Dataset {
+  id          String       @id @default(cuid())
   name        String
-  hypothesis  String?
-  configJson  String?
-  metricsJson String?
-  conclusion  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  type        String?
+  source      String?
+  license     String?
+  tags        String?
+  storagePath String?
+  version     String?
+  sizeBytes   Int?
+  fileHash    String?
+  note        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  experiments Experiment[]
 }
 
 model Insight {
