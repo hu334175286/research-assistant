@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const MODEL_OPTIONS = ['Codex', 'QwenCoder', 'Kimi'];
 
@@ -8,6 +8,20 @@ export default function ModelSwitchPanel() {
   const [currentModel, setCurrentModel] = useState('Codex');
   const [status, setStatus] = useState('');
   const [loadingModel, setLoadingModel] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/model-switch');
+        const json = await res.json();
+        if (res.ok && json?.currentModel) {
+          setCurrentModel(json.currentModel);
+        }
+      } catch {
+        // noop
+      }
+    })();
+  }, []);
 
   const switchModel = async (targetModel) => {
     if (targetModel === currentModel) {
@@ -26,7 +40,7 @@ export default function ModelSwitchPanel() {
           targetModel,
           fromModel: currentModel,
           reason: 'manual_quick_switch',
-          scope: 'session',
+          scope: 'global_default',
         }),
       });
 
@@ -44,7 +58,7 @@ export default function ModelSwitchPanel() {
 
   return (
     <section style={panelStyle}>
-      <h2 style={{ marginTop: 0 }}>会话内一键切模型（项目内模拟）</h2>
+      <h2 style={{ marginTop: 0 }}>一键切模型（联动 OpenClaw 默认模型）</h2>
       <p style={{ marginTop: 0, color: '#475569' }}>当前模型：<strong>{currentModel}</strong></p>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -72,6 +86,9 @@ export default function ModelSwitchPanel() {
         })}
       </div>
 
+      <div style={{ marginTop: 10, color: '#6b7280', fontSize: 13 }}>
+        说明：此操作会修改 OpenClaw 默认模型（后续会话生效），并记录切换日志。
+      </div>
       {status && <div style={{ marginTop: 12, color: '#0f172a' }}>{status}</div>}
     </section>
   );
