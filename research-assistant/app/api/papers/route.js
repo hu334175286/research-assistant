@@ -14,6 +14,8 @@ export async function POST(req) {
       source: body.source ?? null,
       tags: body.tags ?? null,
       summaryJson: body.summaryJson ? JSON.stringify(body.summaryJson) : null,
+      venueTier: body.venueTier ?? 'unknown',
+      venueMatchedBy: body.venueMatchedBy ?? null,
     },
   });
   return Response.json(item, { status: 201 });

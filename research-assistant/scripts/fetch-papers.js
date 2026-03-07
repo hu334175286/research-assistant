@@ -31,11 +31,39 @@ function parseEntries(xml) {
   });
 }
 
-function score(text, keywords = [], venueKeywords = [], excludeKeywords = []) {
+function getVenueKeywords(cfg = {}) {
+  const out = [];
+  for (const groupName of ['conference', 'journal']) {
+    const group = (cfg.venues || {})[groupName] || {};
+    for (const tier of ['A', 'B']) {
+      for (const name of group[tier] || []) out.push(String(name).toLowerCase());
+    }
+  }
+  return [...new Set(out)];
+}
+
+function resolveVenueTier(item, cfg = {}) {
+  const text = [item.title, item.summary, item.journalRef, item.comment].join(' ').toLowerCase();
+  for (const groupName of ['conference', 'journal']) {
+    const group = (cfg.venues || {})[groupName] || {};
+    for (const tier of ['A', 'B']) {
+      for (const rawName of group[tier] || []) {
+        const name = String(rawName || '').toLowerCase();
+        if (name && text.includes(name)) {
+          return { venueTier: tier, venueMatchedBy: `${groupName}:${tier}:${rawName}` };
+        }
+      }
+    }
+  }
+  return { venueTier: 'unknown', venueMatchedBy: null };
+}
+
+function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cfg = {}) {
   const t = String(text || '').toLowerCase();
   let s = 0;
+  const mergedVenueKeywords = [...(venueKeywords || []), ...getVenueKeywords(cfg)];
   for (const kw of keywords) if (t.includes(String(kw).toLowerCase())) s += 1;
-  for (const kw of venueKeywords) if (t.includes(String(kw).toLowerCase())) s += 2;
+  for (const kw of mergedVenueKeywords) if (t.includes(String(kw).toLowerCase())) s += 2;
   for (const kw of excludeKeywords) if (t.includes(String(kw).toLowerCase())) s -= 2;
   return s;
 }
@@ -58,8 +86,9 @@ async function main() {
 
     for (const item of items) {
       const text = [item.title, item.summary, item.journalRef, item.comment].join(' ');
-      const relevance = score(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || []);
+      const relevance = score(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || [], cfg);
       const inCategory = (topic.categories || []).length === 0 || (item.categories || []).some((c) => topic.categories.includes(c));
+      const venue = resolveVenueTier(item, cfg);
       if (relevance < (cfg.minRelevanceScore || 2) || !inCategory) continue;
 
       const exists = await prisma.paper.findFirst({
@@ -84,7 +113,11 @@ async function main() {
             comment: item.comment,
             categories: item.categories,
             relevance,
+            venueTier: venue.venueTier,
+            venueMatchedBy: venue.venueMatchedBy,
           }),
+          venueTier: venue.venueTier,
+          venueMatchedBy: venue.venueMatchedBy,
         },
       });
       inserted += 1;

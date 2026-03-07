@@ -18,6 +18,16 @@
       "categories": ["cs.DC", "cs.NI", "cs.AI", "cs.LG"]
     }
   ],
+  "venues": {
+    "conference": {
+      "A": ["mobicom", "mobisys", "sensys", "ipsn", "ubicomp", "nsdi"],
+      "B": ["infocom", "icdcs", "percom", "secon", "lcn"]
+    },
+    "journal": {
+      "A": ["imwut", "ton", "tmc", "iot journal"],
+      "B": ["tosn", "jsac", "tpds", "tvt"]
+    }
+  },
   "venueKeywords": [
     "mobicom",
     "mobisys",

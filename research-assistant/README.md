@@ -22,7 +22,9 @@
 - 研究方向配置：`config/research-focus.json`
 - 自动抓取脚本：`npm run papers:auto-fetch`
 - 自动抓取API：`/api/papers/auto-fetch`（状态） / `?run=1`（立即执行）
+- 质量汇总API：`/api/papers/quality-summary`
 - 抓取源：arXiv（按研究方向关键词 + 类别过滤 + 去重入库）
+- 顶刊顶会识别 v1：入库时写入 `venueTier`（A/B/unknown）与 `venueMatchedBy`
 - 仪表盘新增：今日自动抓取数 + 最新自动抓取Top5
 - 调度器新增：按 `research-focus.json` 的 `fetchEveryMinutes` 自动抓取
 
