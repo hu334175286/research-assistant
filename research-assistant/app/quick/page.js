@@ -30,6 +30,7 @@ export default async function QuickPage() {
   const { recommended, primary, fallback, isPrimaryAvailable } = recommendedInfo;
 
   const appLinks = [
+    { href: '/tools', label: '科研工具中心 Tools' },
     { href: '/', label: '首页门户' },
     { href: '/dashboard', label: '研究指挥台 Dashboard' },
     { href: '/papers', label: '文献库 Papers' },

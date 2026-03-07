@@ -11,6 +11,7 @@ const navs = [
   ['文献库', '/papers'],
   ['搜索', '/search'],
   ['可视化', '/visual-insights'],
+  ['工具', '/tools'],
   ['实验', '/experiments'],
   ['日报', '/reports/daily'],
   ['周报', '/reports/weekly'],
