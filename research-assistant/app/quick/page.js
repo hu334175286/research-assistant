@@ -31,6 +31,7 @@ export default async function QuickPage() {
 
   const appLinks = [
     { href: '/tools', label: '科研工具中心 Tools' },
+    { href: '/api/tools', label: '工具配置 API' },
     { href: '/', label: '首页门户' },
     { href: '/dashboard', label: '研究指挥台 Dashboard' },
     { href: '/papers', label: '文献库 Papers' },

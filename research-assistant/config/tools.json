@@ -1,0 +1,114 @@
+{
+  "builtIn": [
+    {
+      "id": "papers",
+      "name": "文献管理",
+      "desc": "管理论文、质量分层、BibTeX导出",
+      "href": "/papers"
+    },
+    {
+      "id": "visual-insights",
+      "name": "可视化分析",
+      "desc": "质量分布、来源占比、趋势图",
+      "href": "/visual-insights"
+    },
+    {
+      "id": "search",
+      "name": "全局搜索",
+      "desc": "跨文献/实验/报告统一检索",
+      "href": "/search"
+    },
+    {
+      "id": "quick",
+      "name": "快速入口",
+      "desc": "常用页面、模型切换、系统状态",
+      "href": "/quick"
+    },
+    {
+      "id": "model-route",
+      "name": "模型路由",
+      "desc": "按任务类型查看模型策略",
+      "href": "/api/model-route?taskType=literature_gap"
+    },
+    {
+      "id": "model-failover",
+      "name": "故障切换",
+      "desc": "模拟错误并查看自动切换建议",
+      "href": "/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429&dryRun=1"
+    }
+  ],
+  "externalGroups": [
+    {
+      "id": "latex",
+      "category": "LaTeX 工具",
+      "items": [
+        {
+          "id": "overleaf",
+          "name": "Overleaf",
+          "url": "https://www.overleaf.com",
+          "note": "在线 LaTeX 协作写作"
+        },
+        {
+          "id": "tex-live",
+          "name": "TeX Live",
+          "url": "https://www.tug.org/texlive/",
+          "note": "本地 LaTeX 编译环境"
+        }
+      ]
+    },
+    {
+      "id": "python-data",
+      "category": "Python 与数据分析",
+      "items": [
+        {
+          "id": "anaconda",
+          "name": "Anaconda",
+          "url": "https://www.anaconda.com/",
+          "note": "Python 科研环境管理"
+        },
+        {
+          "id": "jupyter",
+          "name": "Jupyter",
+          "url": "https://jupyter.org/",
+          "note": "交互式数据分析"
+        }
+      ]
+    },
+    {
+      "id": "writing-translate",
+      "category": "写作与翻译",
+      "items": [
+        {
+          "id": "deepl",
+          "name": "DeepL",
+          "url": "https://www.deepl.com/",
+          "note": "高质量学术翻译"
+        },
+        {
+          "id": "grammarly",
+          "name": "Grammarly",
+          "url": "https://www.grammarly.com/",
+          "note": "英文润色"
+        }
+      ]
+    },
+    {
+      "id": "journal-search",
+      "category": "查重与期刊查找（建议外链）",
+      "items": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "url": "https://search.crossref.org/",
+          "note": "文献检索与 DOI 查询"
+        },
+        {
+          "id": "scimago",
+          "name": "Scimago Journal Rank",
+          "url": "https://www.scimagojr.com/",
+          "note": "期刊分区与影响力参考"
+        }
+      ]
+    }
+  ]
+}
