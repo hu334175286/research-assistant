@@ -15,6 +15,11 @@ export default function TranslationToggle({ paperId, initial }) {
   const [lang, setLang] = useState('original');
   const [data, setData] = useState(initial);
   const [loading, setLoading] = useState(false);
+  const [paragraph, setParagraph] = useState('');
+  const [preserveTerms, setPreserveTerms] = useState(true);
+  const [paragraphLoading, setParagraphLoading] = useState(false);
+  const [paragraphResult, setParagraphResult] = useState(null);
+  const [paragraphError, setParagraphError] = useState('');
 
   const shownTitle = useMemo(() => {
     if (lang === 'zh') return data?.title?.zh || data?.title?.en || '';
@@ -39,6 +44,35 @@ export default function TranslationToggle({ paperId, initial }) {
       setData(json.translations || data);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onTranslateParagraph() {
+    const text = paragraph.trim();
+    if (!text) {
+      setParagraphError('请输入要翻译的段落');
+      return;
+    }
+
+    setParagraphLoading(true);
+    setParagraphError('');
+    try {
+      const res = await fetch(`/api/papers/${paperId}/translate-paragraph`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paragraph: text, preserveTerms }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setParagraphError(json?.error || '段落翻译失败');
+        return;
+      }
+      setParagraphResult(json?.translation || null);
+    } catch {
+      setParagraphError('段落翻译失败，请稍后重试');
+    } finally {
+      setParagraphLoading(false);
     }
   }
 
@@ -67,6 +101,44 @@ export default function TranslationToggle({ paperId, initial }) {
         <div style={{ lineHeight: 1.7 }}>{shownTitle || '暂无'}</div>
         <div style={{ fontWeight: 600, margin: '14px 0 8px' }}>摘要</div>
         <div style={{ lineHeight: 1.8, color: '#374151', whiteSpace: 'pre-wrap' }}>{shownAbstract || '暂无摘要'}</div>
+      </div>
+
+      <div style={{ marginTop: 14, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>段落翻译</div>
+        <textarea
+          value={paragraph}
+          onChange={(e) => setParagraph(e.target.value)}
+          placeholder="粘贴任意英文段落，支持缓存复用"
+          rows={6}
+          style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 10, padding: 10, fontSize: 14, lineHeight: 1.6 }}
+        />
+
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151' }}>
+            <input
+              type="checkbox"
+              checked={preserveTerms}
+              onChange={(e) => setPreserveTerms(e.target.checked)}
+            />
+            保留术语原文
+          </label>
+          <button
+            type="button"
+            onClick={onTranslateParagraph}
+            disabled={paragraphLoading}
+            style={{ ...btnStyle, borderRadius: 10, background: '#eff6ff', borderColor: '#93c5fd' }}
+          >
+            {paragraphLoading ? '翻译中...' : '翻译段落'}
+          </button>
+          {paragraphError ? <span style={{ fontSize: 12, color: '#dc2626' }}>{paragraphError}</span> : null}
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>翻译结果</div>
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 10, minHeight: 72, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+            {paragraphResult?.zh || '暂无翻译结果'}
+          </div>
+        </div>
       </div>
     </section>
   );
