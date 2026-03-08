@@ -38,6 +38,7 @@ export default async function HomePage() {
           <li><Link href="/reports/daily">日报查看</Link> / <Link href="/reports/weekly">周报查看</Link></li>
           <li><a href="/api/model-route?taskType=literature_gap">模型路由示例 API</a></li>
           <li><a href="/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429">故障切换示例 API</a></li>
+          <li><Link href="/delivery">功能落地清单（含状态筛选）</Link> / <a href="/api/delivery-status">落地状态 API</a></li>
         </ul>
       </section>
 
