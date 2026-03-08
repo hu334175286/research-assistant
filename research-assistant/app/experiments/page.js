@@ -12,7 +12,7 @@ export default async function ExperimentsPage() {
     }),
     prisma.dataset.findMany({
       orderBy: { createdAt: 'desc' },
-      select: { id: true, name: true, type: true, source: true },
+      select: { id: true, name: true, type: true, source: true, version: true },
       take: 200,
     }),
   ]);

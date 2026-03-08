@@ -63,7 +63,13 @@ export default function ExperimentsClient({ datasets, experiments }) {
             <li key={e.id}>
               <strong>{e.name}</strong>
               <div style={{ color: '#4b5563', fontSize: 13 }}>
-                关联数据集：{e.dataset ? `${e.dataset.name}（${e.dataset.type}/${e.dataset.source}）` : '未关联'}
+                数据集名称：{e.dataset?.name || '未关联'}
+              </div>
+              <div style={{ color: '#4b5563', fontSize: 13 }}>
+                datasetId：{e.datasetId || '-'}
+              </div>
+              <div style={{ color: '#4b5563', fontSize: 13 }}>
+                datasetVersionSnapshot：{e.datasetVersionSnapshot || '-'}
               </div>
               {e.hypothesis ? <div style={{ color: '#6b7280', fontSize: 13 }}>假设：{e.hypothesis}</div> : null}
             </li>
@@ -80,9 +86,10 @@ export default function ExperimentsClient({ datasets, experiments }) {
           <select name="datasetId" style={inputStyle} defaultValue="">
             <option value="">不关联数据集</option>
             {datasets.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}（{d.type}/{d.source}）</option>
+              <option key={d.id} value={d.id}>{d.name}（{d.type}/{d.source}，version: {d.version || '-'}）</option>
             ))}
           </select>
+          <input name="datasetVersionSnapshot" placeholder="datasetVersionSnapshot（可选，默认取数据集当前 version）" style={inputStyle} />
           <button disabled={submitting} type="submit" style={{ border: 0, borderRadius: 8, padding: '10px 12px', background: '#111827', color: '#fff' }}>
             {submitting ? '提交中...' : '创建实验'}
           </button>

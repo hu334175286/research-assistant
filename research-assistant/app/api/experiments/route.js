@@ -23,6 +23,14 @@ export async function POST(req) {
     return Response.json({ error: 'name 为必填字段' }, { status: 400 });
   }
 
+  const datasetId = normalizeText(body.datasetId);
+  let datasetVersionSnapshot = normalizeText(body.datasetVersionSnapshot);
+
+  if (datasetId && !datasetVersionSnapshot) {
+    const dataset = await prisma.dataset.findUnique({ where: { id: datasetId }, select: { version: true } });
+    datasetVersionSnapshot = normalizeText(dataset?.version);
+  }
+
   const item = await prisma.experiment.create({
     data: {
       name,
@@ -30,8 +38,8 @@ export async function POST(req) {
       configJson: body.configJson ? JSON.stringify(body.configJson) : null,
       metricsJson: body.metricsJson ? JSON.stringify(body.metricsJson) : null,
       conclusion: normalizeText(body.conclusion),
-      datasetId: normalizeText(body.datasetId),
-      datasetVersionSnapshot: normalizeText(body.datasetVersionSnapshot),
+      datasetId,
+      datasetVersionSnapshot,
     },
     include: { dataset: true },
   });
