@@ -15,6 +15,7 @@
     "scheduler": "node scripts/scheduler.js",
     "smoke": "node scripts/smoke-check.js",
     "check:datasets": "node scripts/check-datasets-flow.js",
+    "check:ccf": "node scripts/check-ccf-coverage.js",
     "quick:open": "node scripts/open-quick.js",
     "verify": "npm run build && npm run smoke",
     "auto:cycle": "node scripts/dev-auto-cycle.js",

@@ -36,6 +36,8 @@ export async function GET() {
     ccf[ccfTier] += 1;
   }
 
+  const covered = ccf.A + ccf.B + ccf.C;
+
   return Response.json({
     total,
     tierA,
@@ -54,6 +56,11 @@ export async function GET() {
         C: total ? Number((ccf.C / total).toFixed(4)) : 0,
         NA: total ? Number((ccf.NA / total).toFixed(4)) : 0,
       },
+    },
+    coverage: {
+      covered,
+      uncovered: ccf.NA,
+      ratio: total ? Number((covered / total).toFixed(4)) : 0,
     },
     latestMatched,
   });
