@@ -7,112 +7,187 @@
       "feature": "首页门户与科研快速入口",
       "status": "completed",
       "description": "统一展示科研助手核心入口、关键指标和模型切换事件。",
-      "verifyLinks": ["/", "/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429"]
+      "verifyLinks": [
+        "/",
+        "/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429"
+      ]
     },
     {
       "id": "dashboard",
       "feature": "研究指挥台",
       "status": "completed",
       "description": "整合任务、文献、实验、周报状态与质量分层统计。",
-      "verifyLinks": ["/dashboard", "/api/dashboard-summary"]
+      "verifyLinks": [
+        "/dashboard",
+        "/api/dashboard-summary"
+      ]
     },
     {
       "id": "paper-management",
       "feature": "文献管理与质量评估",
       "status": "completed",
       "description": "支持文献库浏览、质量分层及 BibTeX 导出。",
-      "verifyLinks": ["/papers", "/api/papers/quality-summary", "/api/papers/bibtex/export"]
+      "verifyLinks": [
+        "/papers",
+        "/api/papers/quality-summary",
+        "/api/papers/bibtex/export"
+      ]
     },
     {
       "id": "arxiv-ingest",
       "feature": "arXiv 自动抓取",
       "status": "completed",
       "description": "提供 arXiv 查询与自动抓取能力。",
-      "verifyLinks": ["/api/papers/arxiv", "/api/papers/auto-fetch"]
+      "verifyLinks": [
+        "/api/papers/arxiv",
+        "/api/papers/auto-fetch"
+      ]
     },
     {
       "id": "dataset-center",
       "feature": "数据集中心",
       "status": "completed",
       "description": "支持数据集列表、质量汇总和数据切分管理。",
-      "verifyLinks": ["/datasets", "/api/datasets", "/api/datasets/quality-summary", "/api/datasets/splits"]
+      "verifyLinks": [
+        "/datasets",
+        "/api/datasets",
+        "/api/datasets/quality-summary",
+        "/api/datasets/splits"
+      ]
     },
     {
       "id": "experiment-tracking",
       "feature": "实验记录与追踪",
       "status": "completed",
       "description": "支持实验记录维护与实验-数据集追踪。",
-      "verifyLinks": ["/experiments", "/api/experiments", "/api/trace/experiment-dataset"]
+      "verifyLinks": [
+        "/experiments",
+        "/api/experiments",
+        "/api/trace/experiment-dataset"
+      ]
     },
     {
       "id": "visual-insights",
       "feature": "科研可视化与导出",
       "status": "completed",
       "description": "可视化科研进展并支持导出。",
-      "verifyLinks": ["/visual-insights", "/api/visual-insights/export"]
+      "verifyLinks": [
+        "/visual-insights",
+        "/api/visual-insights/export"
+      ]
     },
     {
       "id": "reports",
       "feature": "日报与周报",
       "status": "completed",
       "description": "提供日报/周报页面及脚本化生成能力。",
-      "verifyLinks": ["/reports/daily", "/reports/weekly"]
+      "verifyLinks": [
+        "/reports/daily",
+        "/reports/weekly"
+      ]
     },
     {
       "id": "tool-hub",
       "feature": "科研工具中心",
       "status": "completed",
       "description": "内置工具与外链工具聚合管理。",
-      "verifyLinks": ["/tools", "/api/tools"]
+      "verifyLinks": [
+        "/tools",
+        "/api/tools"
+      ]
     },
     {
       "id": "model-routing",
       "feature": "模型路由与故障切换",
       "status": "completed",
       "description": "支持任务路由、健康检测、切换日志与故障转移。",
-      "verifyLinks": ["/api/model-route", "/api/model-health", "/api/model-failover", "/api/model-switch"]
+      "verifyLinks": [
+        "/api/model-route",
+        "/api/model-health",
+        "/api/model-failover",
+        "/api/model-switch"
+      ]
     },
     {
       "id": "verify-pipeline",
       "feature": "自动化验证链路",
       "status": "completed",
       "description": "支持最新验证结果查询与触发验证。",
-      "verifyLinks": ["/api/verify/latest", "/api/verify/run"]
+      "verifyLinks": [
+        "/api/verify/latest",
+        "/api/verify/run"
+      ]
     },
     {
       "id": "search-qa",
       "feature": "研究搜索与问答",
       "status": "in_progress",
       "description": "已提供基础搜索接口与页面，仍需补充更深入的问答链路。",
-      "verifyLinks": ["/search", "/api/search"]
+      "verifyLinks": [
+        "/search",
+        "/api/search"
+      ]
     },
     {
       "id": "task-workbench",
       "feature": "任务协同工作台",
       "status": "in_progress",
       "description": "已有任务 API，缺少独立任务管理页面与流程编排。",
-      "verifyLinks": ["/api/tasks", "/dashboard"]
+      "verifyLinks": [
+        "/api/tasks",
+        "/dashboard"
+      ]
     },
     {
       "id": "delivery-governance",
       "feature": "功能落地清单治理",
       "status": "completed",
       "description": "新增落地状态清单页与状态 API，支持筛选与可验证链接。",
-      "verifyLinks": ["/delivery", "/api/delivery-status"]
+      "verifyLinks": [
+        "/delivery",
+        "/api/delivery-status"
+      ]
     },
     {
       "id": "auth-rbac",
       "feature": "用户鉴权与权限控制",
       "status": "planned",
       "description": "当前系统为单机演示态，尚未接入账号体系与细粒度权限。",
-      "verifyLinks": ["/"]
+      "verifyLinks": [
+        "/"
+      ]
     },
     {
       "id": "alerts-subscription",
       "feature": "订阅告警与消息推送",
       "status": "planned",
       "description": "后续计划补充实验异常、抓取失败和报告生成通知机制。",
-      "verifyLinks": ["/dashboard"]
+      "verifyLinks": [
+        "/dashboard"
+      ]
+    },
+    {
+      "id": "demo-cross-team-sync",
+      "feature": "[DEMO] 跨团队周会自动摘要同步",
+      "status": "in_progress",
+      "description": "演示条目：模拟跨团队周会纪要自动汇总到报告中心。",
+      "verifyLinks": [
+        "/reports/weekly",
+        "/api/dashboard-summary"
+      ],
+      "demo": true
+    },
+    {
+      "id": "demo-alert-drill",
+      "feature": "[DEMO] 异常告警演练工作流",
+      "status": "planned",
+      "description": "演示条目：模拟模型异常后触发预案和责任人提醒。",
+      "verifyLinks": [
+        "/quick",
+        "/api/model-health"
+      ],
+      "demo": true
     }
-  ]
+  ],
+  "sourceNote": "本页优先展示真实交付清单；当真实条目不足时，使用 seed:demo 注入带 [DEMO] 标记的模拟样例，便于演示筛选与状态统计。"
 }

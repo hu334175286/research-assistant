@@ -150,6 +150,11 @@ function isSourceMatched(sourceFilter, sourceValue = '') {
   return sourceValue === sourceFilter;
 }
 
+function isDemoPaper(paper) {
+  const tags = String(paper?.tags || '').toLowerCase();
+  return tags.includes('demo') || String(paper?.title || '').startsWith('[DEMO]');
+}
+
 function buildCsvHref({ quality, source, yearFrom, yearTo }) {
   const params = new URLSearchParams();
   if (quality && quality !== 'all') params.set('quality', quality);
@@ -204,11 +209,24 @@ export default async function VisualInsightsPage({ searchParams }) {
 
   const total = papers.length;
   const csvHref = buildCsvHref({ quality, source, yearFrom, yearTo });
+  const demoPapers = papers.filter(isDemoPaper).slice(0, 3);
 
   return (
     <main style={{ maxWidth: 1100, margin: '24px auto', padding: 24 }}>
       <h2 style={{ marginTop: 0 }}>科研可视化看板</h2>
       <p style={{ color: '#6b7280' }}>支持按质量、来源、年份区间筛选。</p>
+
+      <section style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 12, padding: 14, marginBottom: 14 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>示例数据来源说明</div>
+        <div style={{ color: '#475569', fontSize: 14 }}>
+          图表默认基于真实文献库数据；当真实数据不足时，可运行 seed:demo 注入带 [DEMO] 标记的高质量样例，仅用于演示筛选与可视化效果。
+        </div>
+        {demoPapers.length ? (
+          <div style={{ marginTop: 8, fontSize: 13, color: '#334155' }}>
+            当前筛选命中 DEMO 样例：{demoPapers.map((p) => p.title).join(' ｜ ')}
+          </div>
+        ) : null}
+      </section>
 
       <form style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14, marginBottom: 14, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <select name="quality" defaultValue={quality} style={{ padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8 }}>

@@ -35,6 +35,20 @@
       "name": "故障切换",
       "desc": "模拟错误并查看自动切换建议",
       "href": "/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429&dryRun=1"
+    },
+    {
+      "id": "demo-litmap",
+      "name": "文献脉络图谱 [DEMO]",
+      "desc": "演示工具：自动聚类研究主题并绘制演进图。",
+      "href": "/visual-insights?source=all",
+      "demo": true
+    },
+    {
+      "id": "demo-repro-check",
+      "name": "复现实验清单助手 [DEMO]",
+      "desc": "演示工具：根据论文自动生成复现实验 checklist。",
+      "href": "/experiments",
+      "demo": true
     }
   ],
   "externalGroups": [
@@ -109,6 +123,20 @@
           "note": "期刊分区与影响力参考"
         }
       ]
+    },
+    {
+      "id": "demo-sandbox-tools",
+      "category": "演示沙盒工具",
+      "items": [
+        {
+          "id": "demo-mock-repo",
+          "name": "Mock Research Repo",
+          "url": "https://example.com/mock-research-repo",
+          "note": "演示外链：样例数据仓库",
+          "demo": true
+        }
+      ]
     }
-  ]
+  ],
+  "sourceNote": "工具中心默认来自真实配置；若演示环境条目不足，seed:demo 会补充少量 [DEMO] 工具，仅用于界面演示。"
 }

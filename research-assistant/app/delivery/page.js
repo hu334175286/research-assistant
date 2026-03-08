@@ -13,6 +13,7 @@ export default function DeliveryPage() {
     <DeliveryClient
       project={checklist.project}
       updatedAt={checklist.updatedAt}
+      sourceNote={checklist.sourceNote}
       items={checklist.items}
     />
   );

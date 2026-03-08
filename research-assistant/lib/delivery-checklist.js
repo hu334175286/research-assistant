@@ -12,6 +12,7 @@ function normalizeItem(item = {}) {
     status: STATUS_LIST.includes(item.status) ? item.status : 'planned',
     description: String(item.description || ''),
     verifyLinks: Array.isArray(item.verifyLinks) ? item.verifyLinks.map((v) => String(v)) : [],
+    demo: Boolean(item.demo),
   };
 }
 
@@ -20,6 +21,7 @@ function normalizeChecklist(raw = {}) {
   return {
     project: String(raw.project || '科研助手'),
     updatedAt: String(raw.updatedAt || ''),
+    sourceNote: String(raw.sourceNote || ''),
     items,
   };
 }

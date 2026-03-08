@@ -6,6 +6,7 @@ import { getLatestModelSwitchEvent } from '@/lib/model-switch-log';
 import { readLatestVerifyResult } from '@/lib/verify-runner';
 import { readCurrentModel } from '@/lib/model-runtime-status';
 import { getRuntimePortHealth } from '@/lib/runtime-port-health';
+import { loadDemoExamples } from '@/lib/demo-examples';
 
 const healthColorMap = {
   green: { bg: '#dcfce7', fg: '#166534', border: '#86efac', text: '绿色' },
@@ -30,6 +31,7 @@ export default async function QuickPage() {
   }
 
   const { recommended, primary, fallback, isPrimaryAvailable, checks: baseUrlChecks = [] } = recommendedInfo;
+  const demoExamples = loadDemoExamples();
 
   const appLinks = [
     { href: '/tools', label: '科研工具中心 Tools' },
@@ -64,6 +66,13 @@ export default async function QuickPage() {
     <main style={{ maxWidth: 1080, margin: '24px auto', padding: 24 }}>
       <h1 style={{ marginTop: 0 }}>Quick 入口页</h1>
       <p style={{ color: '#334155' }}>一页直达全部常用页面与 API 测试链接。</p>
+
+      <section style={{ ...noticeStyle, background: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: 14 }}>
+        <div style={{ fontWeight: 700 }}>示例数据来源说明</div>
+        <div style={{ marginTop: 6, color: '#475569' }}>
+          {demoExamples.sourceNote || 'Quick 页以实时系统状态为主；当缺少可演示事件时，可通过 seed:demo 注入 [DEMO] 场景说明。'}
+        </div>
+      </section>
 
       <section style={noticeStyle}>
         <div style={{ fontWeight: 700 }}>推荐访问基址：{recommended}</div>
@@ -168,6 +177,21 @@ export default async function QuickPage() {
           ))}
         </div>
       </section>
+
+      {demoExamples.quick.length ? (
+        <section style={{ marginTop: 22 }}>
+          <h2>演示场景（DEMO）</h2>
+          <div style={gridStyle}>
+            {demoExamples.quick.slice(0, 3).map((item) => (
+              <article key={item.id || item.title} style={{ ...cardStyle, cursor: 'default' }}>
+                <div style={{ fontSize: 12, color: '#1d4ed8', marginBottom: 6 }}>[DEMO]</div>
+                <div>{item.title}</div>
+                <small style={{ display: 'block', marginTop: 6, color: '#64748b' }}>{item.desc}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <p style={{ marginTop: 24 }}>
         <Link href="/">← 返回首页</Link>

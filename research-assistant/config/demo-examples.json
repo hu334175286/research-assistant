@@ -1,0 +1,20 @@
+{
+  "sourceNote": "Quick 页核心状态取自实时接口；当近期事件较少时，seed:demo 增补少量 [DEMO] 场景，帮助演示运维与路由能力。",
+  "quick": [
+    {
+      "id": "quick-demo-failover",
+      "title": "模型 429 限流后的自动故障切换",
+      "desc": "模拟 codex 限流后切换到备用模型并记录事件。"
+    },
+    {
+      "id": "quick-demo-verify",
+      "title": "每日 09:00 自动 verify 巡检",
+      "desc": "模拟定时验证任务完成后写入最新健康状态。"
+    },
+    {
+      "id": "quick-demo-port",
+      "title": "端口漂移自愈提示",
+      "desc": "模拟 3000 异常时自动建议切换 3124。"
+    }
+  ]
+}

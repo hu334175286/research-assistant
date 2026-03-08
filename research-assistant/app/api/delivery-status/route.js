@@ -12,6 +12,7 @@ export async function GET(req) {
   return Response.json({
     project: checklist.project,
     updatedAt: checklist.updatedAt,
+    sourceNote: checklist.sourceNote,
     statusFilter: status || 'all',
     summary: getDeliverySummary(filteredItems),
     items: filteredItems,

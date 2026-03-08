@@ -24,7 +24,7 @@ function Badge({ status }) {
   );
 }
 
-export default function DeliveryClient({ project, updatedAt, items }) {
+export default function DeliveryClient({ project, updatedAt, sourceNote, items }) {
   const [status, setStatus] = useState('all');
 
   const filtered = useMemo(
@@ -47,6 +47,13 @@ export default function DeliveryClient({ project, updatedAt, items }) {
         项目：{project} ｜ 更新时间：{updatedAt || '-'} ｜ 接口：
         <a href="/api/delivery-status" target="_blank" rel="noreferrer"> /api/delivery-status</a>
       </p>
+
+      <section style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 12, padding: 14, marginTop: 12 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>示例数据来源说明</div>
+        <div style={{ color: '#475569', fontSize: 14 }}>
+          {sourceNote || '默认展示真实配置数据；若条目不足，seed:demo 会注入带 [DEMO] 标记的演示条目。'}
+        </div>
+      </section>
 
       <section style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14, marginTop: 12 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -78,7 +85,10 @@ export default function DeliveryClient({ project, updatedAt, items }) {
         {filtered.map((item) => (
           <article key={item.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 18 }}>{item.feature}</h3>
+              <h3 style={{ margin: 0, fontSize: 18 }}>
+                {item.feature}
+                {item.demo ? <span style={{ marginLeft: 8, fontSize: 12, color: '#1d4ed8', background: '#dbeafe', borderRadius: 999, padding: '2px 8px' }}>[DEMO]</span> : null}
+              </h3>
               <Badge status={item.status} />
             </div>
             <p style={{ color: '#4b5563', marginTop: 8, marginBottom: 8 }}>{item.description}</p>

@@ -11,7 +11,7 @@ function Card({ title, children }) {
 }
 
 export default async function ToolsPage() {
-  const { builtIn, externalGroups } = loadToolsConfig();
+  const { builtIn, externalGroups, sourceNote } = loadToolsConfig();
 
   return (
     <main style={{ maxWidth: 1100, margin: '24px auto', padding: 24 }}>
@@ -21,6 +21,13 @@ export default async function ToolsPage() {
       <p style={{ marginTop: 8 }}>
         <a href="/api/tools" target="_blank" rel="noreferrer">查看工具配置 API（/api/tools）</a>
       </p>
+
+      <section style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 12, padding: 14, marginBottom: 14 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>示例数据来源说明</div>
+        <div style={{ color: '#475569', fontSize: 14 }}>
+          {sourceNote || '工具列表优先展示真实配置；如内容不足，可通过 seed:demo 注入带 [DEMO] 标记的演示工具。'}
+        </div>
+      </section>
 
       <div style={{ display: 'grid', gap: 14 }}>
         <Card title="内置能力（推荐优先使用）">
@@ -38,7 +45,10 @@ export default async function ToolsPage() {
                   color: '#0f172a',
                 }}
               >
-                <div style={{ fontWeight: 700 }}>{t.name}</div>
+                <div style={{ fontWeight: 700 }}>
+                  {t.name}
+                  {t.demo ? <span style={{ marginLeft: 8, fontSize: 12, color: '#1d4ed8', background: '#dbeafe', borderRadius: 999, padding: '2px 8px' }}>[DEMO]</span> : null}
+                </div>
                 <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>{t.desc}</div>
               </Link>
             ))}
@@ -51,6 +61,7 @@ export default async function ToolsPage() {
               {(group.items || []).map((item) => (
                 <li key={item.id || item.name}>
                   <a href={item.url} target="_blank" rel="noreferrer">{item.name}</a>
+                  {item.demo ? <span style={{ marginLeft: 6, fontSize: 12, color: '#1d4ed8', background: '#dbeafe', borderRadius: 999, padding: '1px 8px' }}>[DEMO]</span> : null}
                   <span style={{ color: '#6b7280' }}> — {item.note}</span>
                 </li>
               ))}

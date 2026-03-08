@@ -17,7 +17,8 @@
     "check:datasets": "node scripts/check-datasets-flow.js",
     "quick:open": "powershell -ExecutionPolicy Bypass -File ./scripts/open-quick.ps1",
     "verify": "npm run build && npm run smoke",
-    "auto:cycle": "node scripts/dev-auto-cycle.js"
+    "auto:cycle": "node scripts/dev-auto-cycle.js",
+    "seed:demo": "node scripts/seed-demo-data.js"
   },
   "dependencies": {
     "@prisma/client": "6.5.0",

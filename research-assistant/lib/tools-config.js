@@ -5,6 +5,7 @@ const CFG_PATH = path.join(process.cwd(), 'config', 'tools.json');
 
 function normalizeConfig(cfg) {
   return {
+    sourceNote: String(cfg?.sourceNote || ''),
     builtIn: Array.isArray(cfg?.builtIn) ? cfg.builtIn : [],
     externalGroups: Array.isArray(cfg?.externalGroups) ? cfg.externalGroups : [],
   };
