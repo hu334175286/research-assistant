@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-08",
+  "updatedAt": "2026-03-09",
   "project": "个人研究助手",
   "items": [
     {
@@ -119,6 +119,28 @@
       ]
     },
     {
+      "id": "delivery-governance",
+      "feature": "功能落地清单治理",
+      "status": "completed",
+      "description": "新增落地状态清单页与状态 API，支持筛选与可验证链接。",
+      "verifyLinks": [
+        "/delivery",
+        "/api/delivery-status"
+      ]
+    },
+    {
+      "id": "real-traceable-content-seeding",
+      "feature": "真实科研样例注入与追溯闭环",
+      "status": "completed",
+      "description": "补充真实论文/数据集/实验样例并实现 datasetId + version + referencePaper 的可追溯关联。",
+      "verifyLinks": [
+        "/papers",
+        "/datasets",
+        "/experiments",
+        "/api/trace/experiment-dataset"
+      ]
+    },
+    {
       "id": "search-qa",
       "feature": "研究搜索与问答",
       "status": "in_progress",
@@ -136,16 +158,6 @@
       "verifyLinks": [
         "/api/tasks",
         "/dashboard"
-      ]
-    },
-    {
-      "id": "delivery-governance",
-      "feature": "功能落地清单治理",
-      "status": "completed",
-      "description": "新增落地状态清单页与状态 API，支持筛选与可验证链接。",
-      "verifyLinks": [
-        "/delivery",
-        "/api/delivery-status"
       ]
     },
     {

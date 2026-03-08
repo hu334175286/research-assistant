@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ui, statusPill } from '@/app/components/unified-ui';
 
 const STATUS_OPTIONS = [
   { key: 'all', label: '全部' },
@@ -18,7 +19,7 @@ const STATUS_STYLE = {
 function Badge({ status }) {
   const cfg = STATUS_STYLE[status] || STATUS_STYLE.planned;
   return (
-    <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, color: cfg.color, background: cfg.bg, fontWeight: 600 }}>
+    <span style={{ ...statusPill(status === 'completed' ? 'success' : status === 'in_progress' ? 'warning' : 'info') }}>
       {cfg.text}
     </span>
   );
@@ -37,25 +38,31 @@ export default function DeliveryClient({ project, updatedAt, sourceNote, items }
     filtered.forEach((item) => {
       base[item.status] += 1;
     });
-    return base;
+    const toPct = (v) => (base.total ? `${((v / base.total) * 100).toFixed(1)}%` : '0.0%');
+    return {
+      ...base,
+      completionRate: toPct(base.completed),
+      inProgressRate: toPct(base.in_progress),
+      plannedRate: toPct(base.planned),
+    };
   }, [filtered]);
 
   return (
-    <main style={{ maxWidth: 1100, margin: '24px auto', padding: 24 }}>
+    <main style={ui.page}>
       <h2 style={{ marginTop: 0 }}>功能落地清单</h2>
       <p style={{ color: '#6b7280', marginTop: 6 }}>
         项目：{project} ｜ 更新时间：{updatedAt || '-'} ｜ 接口：
         <a href="/api/delivery-status" target="_blank" rel="noreferrer"> /api/delivery-status</a>
       </p>
 
-      <section style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 12, padding: 14, marginTop: 12 }}>
+      <section style={{ ...ui.cardSoft, marginTop: 12 }}>
         <div style={{ fontWeight: 700, marginBottom: 6 }}>示例数据来源说明</div>
         <div style={{ color: '#475569', fontSize: 14 }}>
           {sourceNote || '默认展示真实配置数据；若条目不足，seed:demo 会注入带 [DEMO] 标记的演示条目。'}
         </div>
       </section>
 
-      <section style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14, marginTop: 12 }}>
+      <section style={{ ...ui.card, marginTop: 12 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {STATUS_OPTIONS.map((opt) => (
             <button
@@ -63,12 +70,10 @@ export default function DeliveryClient({ project, updatedAt, sourceNote, items }
               type="button"
               onClick={() => setStatus(opt.key)}
               style={{
+                ...ui.buttonGhost,
+                padding: '6px 10px',
                 border: status === opt.key ? '1px solid #2563eb' : '1px solid #d1d5db',
                 background: status === opt.key ? '#eff6ff' : '#fff',
-                color: '#1f2937',
-                borderRadius: 8,
-                padding: '6px 10px',
-                cursor: 'pointer',
               }}
             >
               {opt.label}
@@ -77,17 +82,17 @@ export default function DeliveryClient({ project, updatedAt, sourceNote, items }
         </div>
 
         <div style={{ marginTop: 10, color: '#374151', fontSize: 14 }}>
-          共 {summary.total} 项：已完成 {summary.completed} ｜ 进行中 {summary.in_progress} ｜ 待开发 {summary.planned}
+          共 {summary.total} 项：已完成 {summary.completed}（{summary.completionRate}）｜ 进行中 {summary.in_progress}（{summary.inProgressRate}）｜ 待开发 {summary.planned}（{summary.plannedRate}）
         </div>
       </section>
 
       <section style={{ marginTop: 14, display: 'grid', gap: 12 }}>
-        {filtered.map((item) => (
-          <article key={item.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+        {filtered.length ? filtered.map((item) => (
+          <article key={item.id} style={ui.card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: 18 }}>
                 {item.feature}
-                {item.demo ? <span style={{ marginLeft: 8, fontSize: 12, color: '#1d4ed8', background: '#dbeafe', borderRadius: 999, padding: '2px 8px' }}>[DEMO]</span> : null}
+                {item.demo ? <span style={{ ...statusPill('info'), marginLeft: 8 }}>[DEMO]</span> : null}
               </h3>
               <Badge status={item.status} />
             </div>
@@ -106,7 +111,12 @@ export default function DeliveryClient({ project, updatedAt, sourceNote, items }
               )}
             </div>
           </article>
-        ))}
+        )) : (
+          <div style={ui.empty}>
+            <strong>当前状态筛选下暂无条目</strong>
+            <p style={{ margin: '8px 0 0', fontSize: 13 }}>建议切换到“全部”，或检查 config/delivery-checklist.json 中状态字段是否为 completed / in_progress / planned。</p>
+          </div>
+        )}
       </section>
     </main>
   );

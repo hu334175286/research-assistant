@@ -32,7 +32,7 @@ export function loadDeliveryChecklist() {
 }
 
 export function getDeliverySummary(items = []) {
-  return items.reduce((acc, item) => {
+  const base = items.reduce((acc, item) => {
     acc.total += 1;
     acc[item.status] += 1;
     return acc;
@@ -42,4 +42,13 @@ export function getDeliverySummary(items = []) {
     in_progress: 0,
     planned: 0,
   });
+
+  const ratio = (value) => (base.total ? Number((value / base.total).toFixed(4)) : 0);
+
+  return {
+    ...base,
+    completionRate: ratio(base.completed),
+    inProgressRate: ratio(base.in_progress),
+    plannedRate: ratio(base.planned),
+  };
 }
