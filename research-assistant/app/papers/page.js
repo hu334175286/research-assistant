@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getPaperQuality, qualityLabel } from '@/lib/paper-quality';
 import { ccfTierLabel, resolvePaperCcfTier } from '@/lib/ccf-tier';
+import { ui, statusPill } from '@/app/components/unified-ui';
 
 const QUALITY_FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
 const CCF_FILTER_OPTIONS = ['all', 'A', 'B', 'C', 'NA'];
 
-function badge(text, bg = '#eef2ff', color = '#3730a3') {
+function badge(text) {
   return (
-    <span style={{ background: bg, color, borderRadius: 999, padding: '2px 8px', fontSize: 12, marginLeft: 8 }}>
+    <span style={{ ...statusPill('info'), marginLeft: 8 }}>
       {text}
     </span>
   );
@@ -46,7 +47,7 @@ export default async function PapersPage({ searchParams }) {
   });
 
   return (
-    <main style={{ maxWidth: 1200, margin: '20px auto', padding: 24 }}>
+    <main style={ui.page}>
       <header style={headerStyle}>
         <h2 style={{ margin: 0 }}>文献库</h2>
         <p style={{ margin: '8px 0 0', color: '#475569' }}>左侧筛选，右侧列表。支持手工入库、arXiv 检索和自动抓取文献。</p>
@@ -161,7 +162,7 @@ export default async function PapersPage({ searchParams }) {
           ) : (
             <div style={emptyStateStyle}>
               <strong>当前筛选条件下暂无文献</strong>
-              <p style={{ margin: '8px 0 0' }}>你可以：1) 切换左侧筛选等级；2) 访问 /api/papers/auto-fetch?run=1 抓取新文献；3) 回到 all 查看全量数据。</p>
+              <p style={{ margin: '8px 0 0' }}>建议操作：1) 放宽质量或 CCF 筛选；2) 访问 /api/papers/auto-fetch?run=1 抓取新文献；3) 使用“查看原始 API”排查数据是否写入。</p>
             </div>
           )}
         </section>
@@ -171,18 +172,11 @@ export default async function PapersPage({ searchParams }) {
 }
 
 const headerStyle = {
+  ...ui.cardSoft,
   background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
-  border: '1px solid #e2e8f0',
-  borderRadius: 14,
-  padding: 16,
 };
 
-const panelStyle = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
-  borderRadius: 12,
-  padding: 14,
-};
+const panelStyle = ui.card;
 
 const codeStyle = {
   display: 'block',
@@ -218,10 +212,9 @@ const sideLinkStyle = {
 };
 
 const paperCardStyle = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 10,
+  ...ui.card,
+  borderRadius: 12,
   padding: 12,
-  background: '#fff',
 };
 
 const actionLinkStyle = {
@@ -231,19 +224,9 @@ const actionLinkStyle = {
   fontWeight: 600,
 };
 
-const emptyStateStyle = {
-  background: '#fff7ed',
-  border: '1px solid #fed7aa',
-  borderRadius: 12,
-  padding: 14,
-  color: '#9a3412',
-};
+const emptyStateStyle = ui.empty;
 
 const errorStateStyle = {
-  background: '#fef2f2',
-  border: '1px solid #fecaca',
-  borderRadius: 12,
-  padding: 14,
+  ...ui.error,
   marginTop: 14,
-  color: '#991b1b',
 };

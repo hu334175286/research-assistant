@@ -1,21 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { ui, statusPill } from '@/app/components/unified-ui';
 
-const cardStyle = {
-  background: '#fff',
-  border: '1px solid #e5e7eb',
-  borderRadius: 12,
-  padding: 14,
-};
+const cardStyle = ui.card;
 
-const inputStyle = {
-  width: '100%',
-  border: '1px solid #d1d5db',
-  borderRadius: 8,
-  padding: '8px 10px',
-  fontSize: 14,
-};
+const inputStyle = ui.input;
 
 const thStyle = {
   textAlign: 'left',
@@ -31,7 +21,7 @@ const tdStyle = {
   color: '#111827',
 };
 
-export default function DatasetsClient({ initialDatasets, typeOptions, sourceOptions, selectedType, selectedSource }) {
+export default function DatasetsClient({ initialDatasets, typeOptions, sourceOptions, selectedType, selectedSource, pageError }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -84,15 +74,18 @@ export default function DatasetsClient({ initialDatasets, typeOptions, sourceOpt
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <button type="submit" style={{ border: 0, borderRadius: 8, padding: '0 14px', background: '#2563eb', color: '#fff' }}>筛选</button>
+          <button type="submit" style={{ ...ui.buttonPrimary, padding: '0 14px' }}>筛选</button>
         </form>
 
         {!initialDatasets.length ? (
-          <p style={{ color: '#6b7280' }}>暂无数据集记录。</p>
+          <div style={ui.empty}>
+            <strong>{pageError ? '暂无可展示数据' : '暂无数据集记录'}</strong>
+            <p style={{ margin: '8px 0 0', fontSize: 13 }}>建议操作：1) 先在右侧登记一个数据集；2) 访问 /api/datasets 检查接口返回；3) 清空筛选条件后重试。</p>
+          </div>
         ) : (
           <div style={{ display: 'grid', gap: 12 }}>
             {initialDatasets.map((d) => (
-              <article key={d.id} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 12 }}>
+              <article key={d.id} style={{ ...ui.card, borderRadius: 12, padding: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <strong>{d.name}</strong>
                   <span style={{ color: '#6b7280', fontSize: 13 }}>关联实验：{d._count?.experiments ?? 0}</span>
@@ -109,7 +102,7 @@ export default function DatasetsClient({ initialDatasets, typeOptions, sourceOpt
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: 13, color: '#374151', marginBottom: 6 }}>切分记录（train / val / test）</div>
                   {!d.splits?.length ? (
-                    <p style={{ margin: 0, color: '#9ca3af', fontSize: 13 }}>暂无切分记录</p>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>暂无切分记录，建议补充 train/val/test 便于实验复现。</p>
                   ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead>
@@ -150,10 +143,15 @@ export default function DatasetsClient({ initialDatasets, typeOptions, sourceOpt
           <input name="owner" placeholder="登记人（可选）" style={inputStyle} />
           <textarea name="description" placeholder="描述（可选）" rows={4} style={inputStyle} />
           <input name="tags" placeholder="标签（可选，逗号分隔）" style={inputStyle} />
-          <button disabled={submitting} type="submit" style={{ border: 0, borderRadius: 8, padding: '10px 12px', background: '#111827', color: '#fff' }}>
+          <button disabled={submitting} type="submit" style={{ ...ui.buttonPrimary, opacity: submitting ? 0.8 : 1 }}>
             {submitting ? '提交中...' : '登记数据集'}
           </button>
-          {message ? <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>{message}</p> : null}
+          {message ? (
+            <p style={{ margin: 0, fontSize: 13, color: '#374151' }}>
+              <span style={statusPill(message.startsWith('❌') ? 'danger' : message.includes('✅') ? 'success' : 'info')}>{message.startsWith('❌') ? '失败' : message.includes('✅') ? '成功' : '处理中'}</span>
+              <span style={{ marginLeft: 8 }}>{message}</span>
+            </p>
+          ) : null}
         </form>
       </section>
     </div>
@@ -161,5 +159,5 @@ export default function DatasetsClient({ initialDatasets, typeOptions, sourceOpt
 }
 
 function Tag({ label }) {
-  return <span style={{ background: '#f3f4f6', borderRadius: 999, padding: '2px 8px' }}>{label}</span>;
+  return <span style={{ ...statusPill('info'), fontWeight: 600 }}>{label}</span>;
 }
