@@ -5,6 +5,7 @@ import { getModelHealthSummary } from '@/lib/model-health';
 import { getLatestModelSwitchEvent } from '@/lib/model-switch-log';
 import { readLatestVerifyResult } from '@/lib/verify-runner';
 import { readCurrentModel } from '@/lib/model-runtime-status';
+import { getRuntimePortHealth } from '@/lib/runtime-port-health';
 
 const healthColorMap = {
   green: { bg: '#dcfce7', fg: '#166534', border: '#86efac', text: '绿色' },
@@ -13,11 +14,12 @@ const healthColorMap = {
 };
 
 export default async function QuickPage() {
-  const [recommendedInfo, modelHealthList, latestSwitchEvent, currentModel] = await Promise.all([
+  const [recommendedInfo, modelHealthList, latestSwitchEvent, currentModel, runtimeHealth] = await Promise.all([
     getRecommendedBaseUrl(),
     getModelHealthSummary(),
     getLatestModelSwitchEvent(),
     readCurrentModel(),
+    getRuntimePortHealth(),
   ]);
 
   let latestVerifyStatus = null;
@@ -27,7 +29,7 @@ export default async function QuickPage() {
     latestVerifyStatus = null;
   }
 
-  const { recommended, primary, fallback, isPrimaryAvailable } = recommendedInfo;
+  const { recommended, primary, fallback, isPrimaryAvailable, checks: baseUrlChecks = [] } = recommendedInfo;
 
   const appLinks = [
     { href: '/tools', label: '科研工具中心 Tools' },
@@ -67,6 +69,29 @@ export default async function QuickPage() {
         <div style={{ fontWeight: 700 }}>推荐访问基址：{recommended}</div>
         <div style={{ marginTop: 6, color: '#1e3a8a' }}>
           检测结果：{isPrimaryAvailable ? `${primary} 可访问（优先）` : `${primary} 不可访问，已切换推荐 ${fallback}`}
+        </div>
+        <div style={{ marginTop: 8, fontSize: 13, color: '#334155' }}>
+          基址巡检：{baseUrlChecks.map((item) => `${item.url} ${item.available ? '✅' : '❌'}`).join(' ｜ ')}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 18 }}>
+        <h2>端口与健康检查（3000 / 3124）</h2>
+        <div style={gridStyle}>
+          {runtimeHealth.checks.map((item) => (
+            <div key={item.port} style={cardStyle}>
+              <div style={metaLabelStyle}>端口 {item.port}</div>
+              <div style={metaValueStyle}>{item.ok ? '✅ 运行中' : '❌ 未响应'}</div>
+              <small style={metaHintStyle}>监听地址：{item.baseUrl}</small>
+              <small style={metaHintStyle}>/ 状态：{item.rootStatus ?? 'timeout'}（{item.rootMs}ms）</small>
+              <small style={metaHintStyle}>/api/tools 状态：{item.apiStatus ?? 'timeout'}（{item.apiMs}ms）</small>
+            </div>
+          ))}
+          <div style={cardStyle}>
+            <div style={metaLabelStyle}>当前建议端口</div>
+            <div style={metaValueStyle}>{runtimeHealth.activePort ?? '未检测到活动服务'}</div>
+            <small style={metaHintStyle}>建议地址：{runtimeHealth.activeBaseUrl || recommended}</small>
+          </div>
         </div>
       </section>
 

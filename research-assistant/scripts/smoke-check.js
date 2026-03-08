@@ -116,9 +116,11 @@ async function resolveTarget() {
 function startDevServer(port) {
   return new Promise((resolve, reject) => {
     const command = process.platform === 'win32' ? 'cmd.exe' : 'npm';
+    const mode = process.env.SMOKE_SERVER_MODE || 'start';
+    const npmScript = mode === 'dev' ? 'dev' : 'start';
     const args = process.platform === 'win32'
-      ? ['/d', '/s', '/c', `npm run dev -- --port ${port}`]
-      : ['run', 'dev', '--', '--port', String(port)];
+      ? ['/d', '/s', '/c', `npm run ${npmScript} -- --port ${port}`]
+      : ['run', npmScript, '--', '--port', String(port)];
 
     devServerExited = false;
     manualStopRequested = false;
