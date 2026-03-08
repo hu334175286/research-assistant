@@ -15,13 +15,24 @@ const healthColorMap = {
 };
 
 export default async function QuickPage() {
-  const [recommendedInfo, modelHealthList, latestSwitchEvent, currentModel, runtimeHealth] = await Promise.all([
-    getRecommendedBaseUrl(),
-    getModelHealthSummary(),
-    getLatestModelSwitchEvent(),
-    readCurrentModel(),
-    getRuntimePortHealth(),
-  ]);
+  let pageError = null;
+  let recommendedInfo;
+  let modelHealthList = [];
+  let latestSwitchEvent = null;
+  let currentModel = null;
+  let runtimeHealth = { checks: [], activePort: null, activeBaseUrl: null };
+
+  try {
+    [recommendedInfo, modelHealthList, latestSwitchEvent, currentModel, runtimeHealth] = await Promise.all([
+      getRecommendedBaseUrl(),
+      getModelHealthSummary(),
+      getLatestModelSwitchEvent(),
+      readCurrentModel(),
+      getRuntimePortHealth(),
+    ]);
+  } catch {
+    pageError = '系统状态加载失败，请稍后刷新；若持续异常，可先访问 /api/tools 进行连通性排查。';
+  }
 
   let latestVerifyStatus = null;
   try {
@@ -30,162 +41,164 @@ export default async function QuickPage() {
     latestVerifyStatus = null;
   }
 
-  const { recommended, primary, fallback, isPrimaryAvailable, checks: baseUrlChecks = [] } = recommendedInfo;
+  const {
+    recommended = 'http://127.0.0.1:3000',
+    primary = 'http://127.0.0.1:3000',
+    fallback = 'http://127.0.0.1:3124',
+    isPrimaryAvailable = true,
+    checks: baseUrlChecks = [],
+  } = recommendedInfo || {};
+
   const demoExamples = loadDemoExamples();
 
   const appLinks = [
-    { href: '/tools', label: '科研工具中心 Tools' },
-    { href: '/api/tools', label: '工具配置 API' },
-    { href: '/', label: '首页门户' },
-    { href: '/dashboard', label: '研究指挥台 Dashboard' },
-    { href: '/papers', label: '文献库 Papers' },
-    { href: '/search', label: '搜索 Search' },
-    { href: '/visual-insights', label: '可视化 Visual Insights' },
-    { href: '/experiments', label: '实验记录 Experiments' },
-    { href: '/reports/daily', label: '日报 Reports Daily' },
-    { href: '/reports/weekly', label: '周报 Reports Weekly' },
+    { href: '/dashboard', label: '研究指挥台 Dashboard', desc: '项目总览与任务推进' },
+    { href: '/papers', label: '文献库 Papers', desc: '检索、筛选与导出文献' },
+    { href: '/search', label: '搜索 Search', desc: '统一搜索资料与结论' },
+    { href: '/visual-insights', label: '可视化 Visual Insights', desc: '关键指标图表分析' },
+    { href: '/experiments', label: '实验记录 Experiments', desc: '实验追踪与复盘' },
+    { href: '/reports/daily', label: '日报 Reports Daily', desc: '自动生成日报' },
+    { href: '/reports/weekly', label: '周报 Reports Weekly', desc: '周复盘与趋势追踪' },
+    { href: '/tools', label: '科研工具中心 Tools', desc: '工具配置与执行入口' },
   ];
 
   const apiLinks = [
     { href: '/api/papers', label: '文献列表 API' },
     { href: '/api/papers/arxiv?q=edge ai', label: 'arXiv 搜索 API 示例' },
     { href: '/api/papers/quality-summary', label: '文献质量汇总 API' },
-    { href: '/api/papers/auto-fetch', label: '自动抓取状态 API' },
     { href: '/api/papers/auto-fetch?run=1', label: '触发自动抓取 API' },
-    { href: '/api/experiments', label: '实验列表 API' },
-    { href: '/api/tasks?status=todo&take=20', label: '任务列表 API' },
-    { href: '/api/dashboard-summary', label: '看板汇总 API' },
-    { href: '/api/search?q=edge ai', label: '统一搜索 API 示例' },
-    { href: '/api/model-route?taskType=literature_gap', label: '模型路由 API 示例' },
-    { href: '/api/model-failover?taskType=code_execution&failed=openai-codex/gpt-5.3-codex&error=429', label: '模型故障切换 API 示例' },
     { href: '/api/model-switch', label: '模型手动切换 API（POST）' },
     { href: '/api/model-health', label: '模型健康度 API' },
   ];
 
   return (
-    <main style={{ maxWidth: 1080, margin: '24px auto', padding: 24 }}>
-      <h1 style={{ marginTop: 0 }}>Quick 入口页</h1>
-      <p style={{ color: '#334155' }}>一页直达全部常用页面与 API 测试链接。</p>
-
-      <section style={{ ...noticeStyle, background: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: 14 }}>
-        <div style={{ fontWeight: 700 }}>示例数据来源说明</div>
-        <div style={{ marginTop: 6, color: '#475569' }}>
-          {demoExamples.sourceNote || 'Quick 页以实时系统状态为主；当缺少可演示事件时，可通过 seed:demo 注入 [DEMO] 场景说明。'}
+    <main style={{ maxWidth: 1200, margin: '24px auto', padding: 24 }}>
+      <section style={heroStyle}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 30 }}>Quick 工作台</h1>
+          <p style={{ margin: '8px 0 0', color: '#475569' }}>今日进展、一键操作、模块导航、最近更新一页完成。</p>
+          <p style={{ margin: '8px 0 0', color: '#1e3a8a', fontSize: 13 }}>
+            推荐访问：{recommended}（{isPrimaryAvailable ? `${primary} 可访问` : `${primary} 异常，已切换 ${fallback}`}）
+          </p>
+        </div>
+        <div style={heroActionsStyle}>
+          <a href={`${recommended}/api/papers/auto-fetch?run=1`} style={primaryBtnStyle}>一键抓取文献</a>
+          <a href={`${recommended}/api/model-health`} style={secondaryBtnStyle}>查看模型健康度</a>
+          <a href={`${recommended}/api/tools`} style={secondaryBtnStyle}>工具配置 API</a>
         </div>
       </section>
 
-      <section style={noticeStyle}>
-        <div style={{ fontWeight: 700 }}>推荐访问基址：{recommended}</div>
-        <div style={{ marginTop: 6, color: '#1e3a8a' }}>
-          检测结果：{isPrimaryAvailable ? `${primary} 可访问（优先）` : `${primary} 不可访问，已切换推荐 ${fallback}`}
-        </div>
-        <div style={{ marginTop: 8, fontSize: 13, color: '#334155' }}>
-          基址巡检：{baseUrlChecks.map((item) => `${item.url} ${item.available ? '✅' : '❌'}`).join(' ｜ ')}
+      {pageError ? (
+        <section style={errorStateStyle}>
+          <strong>状态加载异常</strong>
+          <p style={{ margin: '8px 0 0' }}>{pageError}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 13 }}>建议操作：先访问 /api/tools，确认服务正常后返回本页刷新。</p>
+        </section>
+      ) : null}
+
+      <section style={{ marginTop: 18 }}>
+        <h2 style={sectionTitleStyle}>今日进展</h2>
+        <div style={gridStyle}>
+          <StatusCard title="当前模型" value={currentModel?.label || 'unknown'} hint={currentModel?.model || '未读取到模型 ID'} />
+          <StatusCard
+            title="验证状态"
+            value={latestVerifyStatus?.ok ? '✅ verify 通过' : latestVerifyStatus ? '❌ verify 未通过' : '未执行 verify'}
+            hint={latestVerifyStatus?.ts || '可先运行 npm run verify，再回到本页确认'}
+          />
+          <StatusCard
+            title="最近模型切换"
+            value={latestSwitchEvent ? `${latestSwitchEvent.from || '-'} → ${latestSwitchEvent.to || '-'}` : '暂无切换记录'}
+            hint={latestSwitchEvent?.ts || '当前无需人工切换'}
+          />
+          <StatusCard
+            title="活跃端口"
+            value={runtimeHealth.activePort || '未检测到活动服务'}
+            hint={runtimeHealth.activeBaseUrl || recommended}
+          />
         </div>
       </section>
 
       <section style={{ marginTop: 18 }}>
-        <h2>端口与健康检查（3000 / 3124）</h2>
+        <h2 style={sectionTitleStyle}>一键操作</h2>
         <div style={gridStyle}>
-          {runtimeHealth.checks.map((item) => (
-            <div key={item.port} style={cardStyle}>
-              <div style={metaLabelStyle}>端口 {item.port}</div>
-              <div style={metaValueStyle}>{item.ok ? '✅ 运行中' : '❌ 未响应'}</div>
-              <small style={metaHintStyle}>监听地址：{item.baseUrl}</small>
-              <small style={metaHintStyle}>/ 状态：{item.rootStatus ?? 'timeout'}（{item.rootMs}ms）</small>
-              <small style={metaHintStyle}>/api/tools 状态：{item.apiStatus ?? 'timeout'}（{item.apiMs}ms）</small>
-            </div>
+          {apiLinks.map((item) => (
+            <a key={item.href} href={`${recommended}${item.href}`} style={panelActionCardStyle}>
+              <div style={{ fontWeight: 700 }}>{item.label}</div>
+              <small style={smallLinkStyle}>{recommended}{item.href}</small>
+            </a>
           ))}
-          <div style={cardStyle}>
-            <div style={metaLabelStyle}>当前建议端口</div>
-            <div style={metaValueStyle}>{runtimeHealth.activePort ?? '未检测到活动服务'}</div>
-            <small style={metaHintStyle}>建议地址：{runtimeHealth.activeBaseUrl || recommended}</small>
-          </div>
         </div>
       </section>
 
       <section style={{ marginTop: 18 }}>
-        <h2>系统状态总览</h2>
+        <h2 style={sectionTitleStyle}>模块卡片</h2>
         <div style={gridStyle}>
-          <div style={cardStyle}>
-            <div style={metaLabelStyle}>模型当前</div>
-            <div style={metaValueStyle}>{currentModel?.label || 'unknown'}</div>
-            <small style={metaHintStyle}>{currentModel?.model || '未读取到模型 ID'}</small>
-          </div>
-          <div style={cardStyle}>
-            <div style={metaLabelStyle}>最近切换</div>
-            <div style={metaValueStyle}>{latestSwitchEvent ? `${latestSwitchEvent.from || '-'} → ${latestSwitchEvent.to || '-'}` : '暂无记录'}</div>
-            <small style={metaHintStyle}>{latestSwitchEvent?.ts || '尚未发生手动切换'}</small>
-          </div>
-          <div style={cardStyle}>
-            <div style={metaLabelStyle}>推荐基址</div>
-            <div style={metaValueStyle}>{recommended}</div>
-            <small style={metaHintStyle}>{isPrimaryAvailable ? '主基址可访问' : '主基址异常，已自动推荐备用基址'}</small>
-          </div>
-          <div style={cardStyle}>
-            <div style={metaLabelStyle}>验证状态</div>
-            <div style={metaValueStyle}>{latestVerifyStatus?.ok ? '✅ verify 通过' : latestVerifyStatus ? '❌ verify 未通过' : '未执行 verify'}</div>
-            <small style={metaHintStyle}>{latestVerifyStatus?.ts || '点击下方按钮可一键触发 verify'}</small>
-          </div>
+          {appLinks.map((item) => (
+            <a key={item.href} href={`${recommended}${item.href}`} style={moduleCardStyle}>
+              <div style={{ fontWeight: 700 }}>{item.label}</div>
+              <div style={{ marginTop: 6, color: '#475569', fontSize: 13 }}>{item.desc}</div>
+              <small style={smallLinkStyle}>{recommended}{item.href}</small>
+            </a>
+          ))}
         </div>
       </section>
 
       <section style={{ marginTop: 18 }}>
-        <h2>模型可用性 / 配额预警</h2>
-        <p style={{ marginTop: 6, color: '#475569', fontSize: 14 }}>
-          部分 provider 不返回真实剩余额度，当前为事件近似预警。
-        </p>
-        <div style={gridStyle}>
-          {modelHealthList.map((item) => {
-            const palette = healthColorMap[item.health] || healthColorMap.green;
-            return (
-              <div key={item.model} style={{ ...healthCardStyle, borderColor: palette.border }}>
-                <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.model}</div>
-                <div style={{ marginTop: 8, display: 'inline-block', padding: '2px 10px', borderRadius: 999, background: palette.bg, color: palette.fg, fontSize: 12, fontWeight: 700 }}>
-                  {palette.text}
+        <h2 style={sectionTitleStyle}>最近更新</h2>
+        <div style={{ ...panelStyle, padding: 14 }}>
+          <div style={{ fontSize: 13, color: '#334155' }}>
+            基址巡检：{baseUrlChecks.length ? baseUrlChecks.map((item) => `${item.url} ${item.available ? '✅' : '❌'}`).join(' ｜ ') : '暂无巡检结果，建议稍后刷新。'}
+          </div>
+          {runtimeHealth.checks?.length ? (
+            <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+              {runtimeHealth.checks.map((item) => (
+                <div key={item.port} style={miniCheckStyle}>
+                  端口 {item.port}：{item.ok ? '✅ 运行中' : '❌ 未响应'} ｜ / {item.rootStatus ?? 'timeout'}（{item.rootMs}ms）｜ /api/tools {item.apiStatus ?? 'timeout'}（{item.apiMs}ms）
                 </div>
-                <div style={{ marginTop: 10, fontSize: 13, color: '#334155' }}>最近失败次数：{item.failCount}</div>
-                <div style={{ marginTop: 4, fontSize: 13, color: '#334155' }}>最近切换事件数：{item.switchCount}</div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          ) : (
+            <div style={emptyHintStyle}>暂无端口巡检数据。你可以访问 /api/tools 进行手动连通性确认。</div>
+          )}
         </div>
+      </section>
+
+      <section style={{ marginTop: 18 }}>
+        <h2 style={sectionTitleStyle}>模型可用性 / 配额预警</h2>
+        {modelHealthList.length ? (
+          <div style={gridStyle}>
+            {modelHealthList.map((item) => {
+              const palette = healthColorMap[item.health] || healthColorMap.green;
+              return (
+                <div key={item.model} style={{ ...healthCardStyle, borderColor: palette.border }}>
+                  <div style={{ fontWeight: 700 }}>{item.model}</div>
+                  <div style={{ marginTop: 8, display: 'inline-block', padding: '2px 10px', borderRadius: 999, background: palette.bg, color: palette.fg, fontSize: 12, fontWeight: 700 }}>
+                    {palette.text}
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 13, color: '#334155' }}>最近失败次数：{item.failCount}</div>
+                  <div style={{ marginTop: 4, fontSize: 13, color: '#334155' }}>最近切换事件数：{item.switchCount}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={emptyStateStyle}>
+            <strong>暂无模型健康数据</strong>
+            <p style={{ margin: '8px 0 0' }}>可先触发一次 API 调用或执行 verify，系统将自动累积健康度样本。</p>
+          </div>
+        )}
       </section>
 
       <ModelSwitchPanel />
 
-      <section style={{ marginTop: 18 }}>
-        <h2>网页入口</h2>
-        <div style={gridStyle}>
-          {appLinks.map((item) => (
-            <a key={item.href} href={`${recommended}${item.href}`} style={cardStyle}>
-              {item.label}
-              <small style={{ display: 'block', marginTop: 6, color: '#64748b' }}>{recommended}{item.href}</small>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ marginTop: 22 }}>
-        <h2>API 测试链接</h2>
-        <div style={gridStyle}>
-          {apiLinks.map((item) => (
-            <a key={item.href} href={`${recommended}${item.href}`} style={apiCardStyle}>
-              {item.label}
-              <small style={{ display: 'block', marginTop: 6, color: '#64748b' }}>{recommended}{item.href}</small>
-            </a>
-          ))}
-        </div>
-      </section>
-
       {demoExamples.quick.length ? (
-        <section style={{ marginTop: 22 }}>
-          <h2>演示场景（DEMO）</h2>
+        <section style={{ marginTop: 18 }}>
+          <h2 style={sectionTitleStyle}>演示场景（DEMO）</h2>
           <div style={gridStyle}>
             {demoExamples.quick.slice(0, 3).map((item) => (
-              <article key={item.id || item.title} style={{ ...cardStyle, cursor: 'default' }}>
+              <article key={item.id || item.title} style={moduleCardStyle}>
                 <div style={{ fontSize: 12, color: '#1d4ed8', marginBottom: 6 }}>[DEMO]</div>
-                <div>{item.title}</div>
+                <div style={{ fontWeight: 700 }}>{item.title}</div>
                 <small style={{ display: 'block', marginTop: 6, color: '#64748b' }}>{item.desc}</small>
               </article>
             ))}
@@ -200,55 +213,126 @@ export default async function QuickPage() {
   );
 }
 
-const noticeStyle = {
-  background: '#eff6ff',
-  border: '1px solid #bfdbfe',
-  borderRadius: 12,
-  padding: 14,
+function StatusCard({ title, value, hint }) {
+  return (
+    <div style={panelStyle}>
+      <div style={{ fontSize: 13, color: '#64748b' }}>{title}</div>
+      <div style={{ marginTop: 6, fontWeight: 800, color: '#0f172a', wordBreak: 'break-all' }}>{value}</div>
+      <small style={{ display: 'block', marginTop: 6, color: '#64748b' }}>{hint}</small>
+    </div>
+  );
+}
+
+const heroStyle = {
+  background: 'linear-gradient(135deg, #0f172a, #1d4ed8)',
+  color: '#fff',
+  borderRadius: 16,
+  padding: 18,
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 16,
+  flexWrap: 'wrap',
+};
+
+const heroActionsStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+  alignContent: 'flex-start',
+};
+
+const primaryBtnStyle = {
+  padding: '10px 14px',
+  borderRadius: 10,
+  background: '#fff',
+  color: '#1d4ed8',
+  fontWeight: 700,
+  textDecoration: 'none',
+};
+
+const secondaryBtnStyle = {
+  ...primaryBtnStyle,
+  background: 'rgba(255,255,255,0.15)',
+  color: '#fff',
+  border: '1px solid rgba(255,255,255,0.3)',
+};
+
+const sectionTitleStyle = {
+  marginTop: 0,
+  marginBottom: 10,
 };
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
   gap: 12,
 };
 
-const cardStyle = {
-  background: '#ffffff',
+const panelStyle = {
+  background: '#fff',
   border: '1px solid #e2e8f0',
-  borderRadius: 10,
+  borderRadius: 12,
   padding: 14,
-  textDecoration: 'none',
-  color: '#0f172a',
-  fontWeight: 600,
 };
 
-const apiCardStyle = {
-  ...cardStyle,
+const panelActionCardStyle = {
+  ...panelStyle,
+  textDecoration: 'none',
+  color: '#0f172a',
   background: '#f8fafc',
 };
 
-const healthCardStyle = {
-  background: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: 10,
-  padding: 14,
-};
-
-const metaLabelStyle = {
-  fontSize: 13,
-  color: '#64748b',
-};
-
-const metaValueStyle = {
-  marginTop: 6,
-  fontWeight: 700,
+const moduleCardStyle = {
+  ...panelStyle,
+  textDecoration: 'none',
   color: '#0f172a',
+};
+
+const healthCardStyle = {
+  ...panelStyle,
+  border: '1px solid #e2e8f0',
+};
+
+const smallLinkStyle = {
+  display: 'block',
+  marginTop: 8,
+  color: '#64748b',
+  fontSize: 12,
   wordBreak: 'break-all',
 };
 
-const metaHintStyle = {
-  display: 'block',
-  marginTop: 6,
-  color: '#64748b',
+const emptyStateStyle = {
+  background: '#fff7ed',
+  border: '1px solid #fed7aa',
+  borderRadius: 12,
+  padding: 14,
+  color: '#9a3412',
+};
+
+const errorStateStyle = {
+  background: '#fef2f2',
+  border: '1px solid #fecaca',
+  borderRadius: 12,
+  padding: 14,
+  marginTop: 14,
+  color: '#991b1b',
+};
+
+const emptyHintStyle = {
+  marginTop: 10,
+  background: '#fff7ed',
+  color: '#9a3412',
+  border: '1px solid #fed7aa',
+  borderRadius: 10,
+  padding: 10,
+  fontSize: 13,
+};
+
+const miniCheckStyle = {
+  fontSize: 13,
+  color: '#334155',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 10,
+  padding: 8,
 };
