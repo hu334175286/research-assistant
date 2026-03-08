@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getPaperQuality, qualityLabel } from '@/lib/paper-quality';
 
+const FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
+
 function badge(text, bg = '#eef2ff', color = '#3730a3') {
   return (
     <span style={{ background: bg, color, borderRadius: 999, padding: '2px 8px', fontSize: 12, marginLeft: 8 }}>
@@ -10,121 +12,193 @@ function badge(text, bg = '#eef2ff', color = '#3730a3') {
   );
 }
 
-const FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
-
 export default async function PapersPage({ searchParams }) {
   const sp = await searchParams;
   const requested = sp?.quality;
   const qualityFilter = FILTER_OPTIONS.includes(requested) ? requested : 'all';
 
-  const allPapers = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+  let dbError = null;
+  let allPapers = [];
+  try {
+    allPapers = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+  } catch {
+    dbError = '文献数据读取失败，请检查数据库连接后重试。';
+  }
+
   const papers = allPapers.filter((p) => qualityFilter === 'all' || getPaperQuality(p) === qualityFilter);
 
   return (
-    <main style={{ maxWidth: 1000, margin: '20px auto', padding: 24 }}>
-      <h2>文献库</h2>
-      <p>支持手工入库、arXiv 检索以及方向自动抓取（含去重与质量分层）。</p>
+    <main style={{ maxWidth: 1200, margin: '20px auto', padding: 24 }}>
+      <header style={headerStyle}>
+        <h2 style={{ margin: 0 }}>文献库</h2>
+        <p style={{ margin: '8px 0 0', color: '#475569' }}>左侧筛选，右侧列表。支持手工入库、arXiv 检索和自动抓取文献。</p>
+      </header>
 
-      <div style={{ background: '#fff', borderRadius: 12, padding: 14, margin: '12px 0 18px', border: '1px solid #e5e7eb' }}>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>抓取接口（可直接浏览器访问）</div>
-        <code style={{ display: 'block', whiteSpace: 'pre-wrap' }}>/api/papers/arxiv?q=wireless%20sensing&maxResults=8</code>
-        <code style={{ display: 'block', whiteSpace: 'pre-wrap', marginTop: 6 }}>/api/papers/auto-fetch</code>
-        <code style={{ display: 'block', whiteSpace: 'pre-wrap', marginTop: 6 }}>/api/papers/auto-fetch?run=1</code>
-      </div>
+      {dbError ? (
+        <section style={errorStateStyle}>
+          <strong>加载失败</strong>
+          <p style={{ margin: '8px 0 0' }}>{dbError}</p>
+          <p style={{ margin: '8px 0 0', fontSize: 13 }}>建议先访问 /api/papers 观察接口是否可用，确认后刷新页面。</p>
+        </section>
+      ) : null}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0 12px', flexWrap: 'wrap' }}>
-        <span style={{ color: '#4b5563', fontSize: 14 }}>按质量筛选：</span>
-        {FILTER_OPTIONS.map((level) => {
-          const active = qualityFilter === level;
-          return (
-            <Link
-              key={level}
-              href={level === 'all' ? '/papers' : `/papers?quality=${level}`}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 999,
-                border: active ? '1px solid #2563eb' : '1px solid #d1d5db',
-                background: active ? '#eff6ff' : '#fff',
-                color: active ? '#1d4ed8' : '#374151',
-                textDecoration: 'none',
-                fontSize: 13,
-                fontWeight: 500,
-              }}
-            >
-              {qualityLabel(level)}
-            </Link>
-          );
-        })}
-        <span style={{ color: '#6b7280', fontSize: 13 }}>共 {papers.length} 条</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <a
-            href={`/api/papers/bibtex/export?quality=${qualityFilter}`}
-            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
-          >
-            导出当前筛选
-          </a>
-          <a
-            href="/api/papers/bibtex/export?quality=high&yearFrom=2023&limit=100"
-            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
-          >
-            导出高质量(2023+)
-          </a>
-          <a
-            href="/api/papers/bibtex/export"
-            style={{ fontSize: 13, color: '#1d4ed8', textDecoration: 'none' }}
-          >
-            导出全部 BibTeX
-          </a>
-        </div>
-      </div>
+      <section style={{ ...panelStyle, marginTop: 12 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>抓取接口（可直接浏览器访问）</div>
+        <code style={codeStyle}>/api/papers/arxiv?q=wireless%20sensing&maxResults=8</code>
+        <code style={codeStyle}>/api/papers/auto-fetch</code>
+        <code style={codeStyle}>/api/papers/auto-fetch?run=1</code>
+      </section>
 
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-              <th style={{ padding: 12 }}>标题</th>
-              <th style={{ padding: 12, width: 90 }}>年份</th>
-              <th style={{ padding: 12, width: 120 }}>质量层级</th>
-              <th style={{ padding: 12, width: 180 }}>来源</th>
-              <th style={{ padding: 12, width: 130 }}>引用导出</th>
-              <th style={{ padding: 12, width: 120 }}>图表分析</th>
-            </tr>
-          </thead>
-          <tbody>
-            {papers.map((p) => {
-              const level = getPaperQuality(p);
+      <div style={layoutStyle}>
+        <aside style={sidebarStyle}>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>筛选与导出</div>
+          <div style={{ color: '#64748b', fontSize: 13, marginBottom: 8 }}>按质量筛选</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {FILTER_OPTIONS.map((level) => {
+              const active = qualityFilter === level;
               return (
-                <tr key={p.id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: 12 }}>
-                    {p.title}
-                    {p.source === 'arXiv:auto' ? badge('自动抓取') : null}
-                  </td>
-                  <td style={{ padding: 12 }}>{p.year || '-'}</td>
-                  <td style={{ padding: 12 }}>{qualityLabel(level)}</td>
-                  <td style={{ padding: 12 }}>{p.source || '-'}</td>
-                  <td style={{ padding: 12 }}>
-                    <a href={`/api/papers/${p.id}/bibtex`} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>
-                      导出 BibTeX
-                    </a>
-                  </td>
-                  <td style={{ padding: 12 }}>
-                    <a href={`/api/papers/${p.id}/figures`} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>
-                      图表分析
-                    </a>
-                  </td>
-                </tr>
+                <Link
+                  key={level}
+                  href={level === 'all' ? '/papers' : `/papers?quality=${level}`}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: active ? '1px solid #2563eb' : '1px solid #d1d5db',
+                    background: active ? '#eff6ff' : '#fff',
+                    color: active ? '#1d4ed8' : '#374151',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {qualityLabel(level)}
+                </Link>
               );
             })}
-            {!papers.length ? (
-              <tr>
-                <td style={{ padding: 16, color: '#6b7280' }} colSpan={6}>
-                  当前筛选条件下暂无文献。
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+          </div>
+
+          <div style={{ marginTop: 16, fontSize: 13, color: '#475569' }}>当前结果：{papers.length} 条</div>
+
+          <div style={{ marginTop: 14, display: 'grid', gap: 8 }}>
+            <a href={`/api/papers/bibtex/export?quality=${qualityFilter}`} style={sideLinkStyle}>导出当前筛选</a>
+            <a href="/api/papers/bibtex/export?quality=high&yearFrom=2023&limit=100" style={sideLinkStyle}>导出高质量(2023+)</a>
+            <a href="/api/papers/bibtex/export" style={sideLinkStyle}>导出全部 BibTeX</a>
+          </div>
+        </aside>
+
+        <section style={listPaneStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ fontWeight: 700 }}>文献列表 · {qualityLabel(qualityFilter)}</div>
+            <a href="/api/papers" style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>查看原始 API</a>
+          </div>
+
+          {papers.length ? (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {papers.map((p) => {
+                const level = getPaperQuality(p);
+                return (
+                  <article key={p.id} style={paperCardStyle}>
+                    <div style={{ fontWeight: 700, lineHeight: 1.4 }}>
+                      {p.title}
+                      {p.source === 'arXiv:auto' ? badge('自动抓取') : null}
+                    </div>
+                    <div style={{ marginTop: 8, color: '#475569', fontSize: 13 }}>
+                      年份：{p.year || '-'} ｜ 质量：{qualityLabel(level)} ｜ 来源：{p.source || '-'}
+                    </div>
+                    <div style={{ marginTop: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <a href={`/api/papers/${p.id}/bibtex`} style={actionLinkStyle}>导出 BibTeX</a>
+                      <a href={`/api/papers/${p.id}/figures`} style={actionLinkStyle}>图表分析</a>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={emptyStateStyle}>
+              <strong>当前筛选条件下暂无文献</strong>
+              <p style={{ margin: '8px 0 0' }}>你可以：1) 切换左侧筛选等级；2) 访问 /api/papers/auto-fetch?run=1 抓取新文献；3) 回到 all 查看全量数据。</p>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
 }
+
+const headerStyle = {
+  background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
+  border: '1px solid #e2e8f0',
+  borderRadius: 14,
+  padding: 16,
+};
+
+const panelStyle = {
+  background: '#fff',
+  border: '1px solid #e5e7eb',
+  borderRadius: 12,
+  padding: 14,
+};
+
+const codeStyle = {
+  display: 'block',
+  whiteSpace: 'pre-wrap',
+  marginTop: 6,
+  fontSize: 13,
+  color: '#334155',
+};
+
+const layoutStyle = {
+  marginTop: 14,
+  display: 'grid',
+  gridTemplateColumns: '280px 1fr',
+  gap: 14,
+  alignItems: 'start',
+};
+
+const sidebarStyle = {
+  ...panelStyle,
+  position: 'sticky',
+  top: 74,
+};
+
+const listPaneStyle = {
+  ...panelStyle,
+  minHeight: 320,
+};
+
+const sideLinkStyle = {
+  color: '#1d4ed8',
+  textDecoration: 'none',
+  fontSize: 13,
+};
+
+const paperCardStyle = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 10,
+  padding: 12,
+  background: '#fff',
+};
+
+const actionLinkStyle = {
+  color: '#1d4ed8',
+  textDecoration: 'none',
+  fontSize: 13,
+  fontWeight: 600,
+};
+
+const emptyStateStyle = {
+  background: '#fff7ed',
+  border: '1px solid #fed7aa',
+  borderRadius: 12,
+  padding: 14,
+  color: '#9a3412',
+};
+
+const errorStateStyle = {
+  background: '#fef2f2',
+  border: '1px solid #fecaca',
+  borderRadius: 12,
+  padding: 14,
+  marginTop: 14,
+  color: '#991b1b',
+};

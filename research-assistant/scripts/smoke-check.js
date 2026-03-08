@@ -12,6 +12,7 @@ const CHECKS = [
   { path: '/dashboard', expectedStatuses: [200] },
   { path: '/papers', expectedStatuses: [200] },
   { path: '/api/papers/auto-fetch', expectedStatuses: [200] },
+  { path: '/api/papers', expectedStatuses: [200] },
   // 依赖外部 arXiv 网络，允许上游抖动时返回 500/502，避免误判本地服务不可用。
   { path: '/api/papers/arxiv?q=wireless%20sensing&maxResults=3', expectedStatuses: [200, 500, 502] }
 ];
