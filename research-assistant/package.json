@@ -18,6 +18,7 @@
     "quick:open": "powershell -ExecutionPolicy Bypass -File ./scripts/open-quick.ps1",
     "verify": "npm run build && npm run smoke",
     "auto:cycle": "node scripts/dev-auto-cycle.js",
+    "seed:real": "node scripts/seed-real-content.js",
     "seed:demo": "node scripts/seed-demo-data.js"
   },
   "dependencies": {
