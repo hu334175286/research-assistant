@@ -51,7 +51,12 @@ export default async function PaperDetailPage({ params }) {
       </div>
 
       <section style={{ marginTop: 14, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>标签</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ fontWeight: 600 }}>标签</div>
+          <Link href={`/papers/${paper.id}/fulltext`} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+            全文预览 →
+          </Link>
+        </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {tags.length ? tags.map((tag) => (
             <span key={tag} style={{ background: '#eef2ff', color: '#3730a3', borderRadius: 999, padding: '4px 10px', fontSize: 12 }}>

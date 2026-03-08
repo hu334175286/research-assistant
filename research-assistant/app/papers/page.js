@@ -149,6 +149,8 @@ export default async function PapersPage({ searchParams }) {
                       年份：{p.year || '-'} ｜ 质量：{qualityLabel(level)} ｜ CCF：{ccfTierLabel(p.ccfTier)} ｜ 来源：{p.source || '-'}
                     </div>
                     <div style={{ marginTop: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <a href={`/papers/${p.id}`} style={actionLinkStyle}>查看详情</a>
+                      <a href={`/papers/${p.id}/fulltext`} style={actionLinkStyle}>全文预览</a>
                       <a href={`/api/papers/${p.id}/bibtex`} style={actionLinkStyle}>导出 BibTeX</a>
                       <a href={`/api/papers/${p.id}/figures`} style={actionLinkStyle}>图表分析</a>
                     </div>
