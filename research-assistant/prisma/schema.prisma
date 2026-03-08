@@ -38,7 +38,7 @@ model Experiment {
 }
 
 model Dataset {
-  id          String       @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
   type        String?
   source      String?
@@ -49,10 +49,28 @@ model Dataset {
   sizeBytes   Int?
   fileHash    String?
   note        String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  metricsJson String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   experiments Experiment[]
+  splits      DatasetSplit[]
+}
+
+model DatasetSplit {
+  id        String   @id @default(cuid())
+  datasetId String
+  split     String
+  count     Int?
+  ratio     Float?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@unique([datasetId, split])
+  @@index([datasetId])
 }
 
 model Insight {

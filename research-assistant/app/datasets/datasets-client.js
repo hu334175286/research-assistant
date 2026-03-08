@@ -17,6 +17,20 @@ const inputStyle = {
   fontSize: 14,
 };
 
+const thStyle = {
+  textAlign: 'left',
+  borderBottom: '1px solid #e5e7eb',
+  padding: '6px 4px',
+  color: '#4b5563',
+  fontWeight: 600,
+};
+
+const tdStyle = {
+  borderBottom: '1px solid #f3f4f6',
+  padding: '6px 4px',
+  color: '#111827',
+};
+
 export default function DatasetsClient({ initialDatasets, typeOptions, sourceOptions, selectedType, selectedSource }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -83,13 +97,41 @@ export default function DatasetsClient({ initialDatasets, typeOptions, sourceOpt
                   <strong>{d.name}</strong>
                   <span style={{ color: '#6b7280', fontSize: 13 }}>关联实验：{d._count?.experiments ?? 0}</span>
                 </div>
-                <p style={{ margin: '8px 0', color: '#4b5563' }}>{d.description || '暂无描述'}</p>
+                <p style={{ margin: '8px 0', color: '#4b5563' }}>{d.note || '暂无备注'}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 13 }}>
-                  <Tag label={`类型：${d.type}`} />
-                  <Tag label={`来源：${d.source}`} />
-                  {d.format ? <Tag label={`格式：${d.format}`} /> : null}
-                  {d.sizeText ? <Tag label={`规模：${d.sizeText}`} /> : null}
-                  {d.owner ? <Tag label={`登记人：${d.owner}`} /> : null}
+                  <Tag label={`类型：${d.type ?? '-'}`} />
+                  <Tag label={`来源：${d.source ?? '-'}`} />
+                  {d.version ? <Tag label={`版本：${d.version}`} /> : null}
+                  {d.license ? <Tag label={`License：${d.license}`} /> : null}
+                  {typeof d.sizeBytes === 'number' ? <Tag label={`大小：${d.sizeBytes} bytes`} /> : null}
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 13, color: '#374151', marginBottom: 6 }}>切分记录（train / val / test）</div>
+                  {!d.splits?.length ? (
+                    <p style={{ margin: 0, color: '#9ca3af', fontSize: 13 }}>暂无切分记录</p>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>split</th>
+                          <th style={thStyle}>count</th>
+                          <th style={thStyle}>ratio</th>
+                          <th style={thStyle}>note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {d.splits.map((s) => (
+                          <tr key={s.id}>
+                            <td style={tdStyle}>{s.split}</td>
+                            <td style={tdStyle}>{s.count ?? '-'}</td>
+                            <td style={tdStyle}>{typeof s.ratio === 'number' ? s.ratio : '-'}</td>
+                            <td style={tdStyle}>{s.note || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </article>
             ))}
