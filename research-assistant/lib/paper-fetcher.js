@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { calcRelevanceScore, loadResearchFocus } from '@/lib/research-focus';
 import { resolveVenueTier } from '@/lib/venue-tier';
+import { resolveCcfTierByText } from '@/lib/ccf-tier';
 
 const ARXIV_API = 'https://export.arxiv.org/api/query';
 
@@ -56,6 +57,7 @@ export async function runAutoFetch() {
       const score = calcRelevanceScore(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || [], cfg);
       const byCategory = hasTargetCategory(item.categories || [], topic.categories || []);
       const venue = resolveVenueTier(item, cfg);
+      const ccf = resolveCcfTierByText([item.title, item.summary, item.journalRef, item.comment].join(' '));
       if (score < minScore || !byCategory) continue;
       accepted += 1;
 
@@ -81,6 +83,8 @@ export async function runAutoFetch() {
         relevanceScore: score,
         venueTier: venue.venueTier,
         venueMatchedBy: venue.venueMatchedBy,
+        ccfTier: ccf.ccfTier,
+        ccfMatchedBy: ccf.ccfMatchedBy,
       };
 
       const created = await prisma.paper.create({
@@ -96,7 +100,7 @@ export async function runAutoFetch() {
       });
 
       inserted += 1;
-      insertedItems.push({ id: created.id, title: created.title, topic: topic.name, score, venueTier: venue.venueTier, venueMatchedBy: venue.venueMatchedBy });
+      insertedItems.push({ id: created.id, title: created.title, topic: topic.name, score, venueTier: venue.venueTier, venueMatchedBy: venue.venueMatchedBy, ccfTier: ccf.ccfTier, ccfMatchedBy: ccf.ccfMatchedBy });
     }
   }
 

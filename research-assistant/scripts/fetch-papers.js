@@ -58,6 +58,27 @@ function resolveVenueTier(item, cfg = {}) {
   return { venueTier: 'unknown', venueMatchedBy: null };
 }
 
+function loadCcfConfig() {
+  const p = path.join(process.cwd(), 'config', 'ccf-venues.json');
+  return JSON.parse(fs.readFileSync(p, 'utf8'));
+}
+
+function resolveCcfTier(item, ccf = {}) {
+  const text = [item.title, item.summary, item.journalRef, item.comment].join(' ').toLowerCase();
+  for (const groupName of ['conference', 'journal']) {
+    const group = (ccf.venues || {})[groupName] || {};
+    for (const tier of ['A', 'B', 'C']) {
+      for (const rawName of group[tier] || []) {
+        const name = String(rawName || '').toLowerCase();
+        if (name && text.includes(name)) {
+          return { ccfTier: tier, ccfMatchedBy: `${groupName}:${tier}:${rawName}` };
+        }
+      }
+    }
+  }
+  return { ccfTier: 'NA', ccfMatchedBy: null };
+}
+
 function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cfg = {}) {
   const t = String(text || '').toLowerCase();
   let s = 0;
@@ -70,6 +91,7 @@ function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cf
 
 async function main() {
   const cfg = loadConfig();
+  const ccfCfg = loadCcfConfig();
   if (!cfg.enabled) {
     console.log('Auto fetch disabled by config.');
     return;
@@ -89,6 +111,7 @@ async function main() {
       const relevance = score(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || [], cfg);
       const inCategory = (topic.categories || []).length === 0 || (item.categories || []).some((c) => topic.categories.includes(c));
       const venue = resolveVenueTier(item, cfg);
+      const ccf = resolveCcfTier(item, ccfCfg);
       if (relevance < (cfg.minRelevanceScore || 2) || !inCategory) continue;
 
       const exists = await prisma.paper.findFirst({
@@ -115,6 +138,8 @@ async function main() {
             relevance,
             venueTier: venue.venueTier,
             venueMatchedBy: venue.venueMatchedBy,
+            ccfTier: ccf.ccfTier,
+            ccfMatchedBy: ccf.ccfMatchedBy,
           }),
           venueTier: venue.venueTier,
           venueMatchedBy: venue.venueMatchedBy,

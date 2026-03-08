@@ -1,0 +1,82 @@
+{
+  "version": "v1",
+  "domain": "智能物联感知 / 边缘智能",
+  "venues": {
+    "conference": {
+      "A": [
+        "mobicom",
+        "mobisys",
+        "senSys",
+        "ipsn",
+        "ubicomp",
+        "buildsys",
+        "nsdi",
+        "sigcomm",
+        "usenix atc",
+        "aaai",
+        "ijcai",
+        "kdd",
+        "cvpr",
+        "iccv",
+        "neurips",
+        "icml"
+      ],
+      "B": [
+        "infocom",
+        "icdcs",
+        "percom",
+        "secon",
+        "lcn",
+        "rtss",
+        "icra",
+        "iros",
+        "icdcn",
+        "edgecom"
+      ],
+      "C": [
+        "globecom",
+        "wcsp",
+        "wcnc",
+        "icc",
+        "mass",
+        "dcoss",
+        "hotmobile",
+        "icccn"
+      ]
+    },
+    "journal": {
+      "A": [
+        "ieee/acm transactions on networking",
+        "ton",
+        "ieee transactions on mobile computing",
+        "tmc",
+        "proceedings of the acm on interactive, mobile, wearable and ubiquitous technologies",
+        "imwut",
+        "ieee internet of things journal",
+        "iot journal",
+        "nature machine intelligence",
+        "tpami"
+      ],
+      "B": [
+        "ieee transactions on parallel and distributed systems",
+        "tpds",
+        "ieee transactions on vehicular technology",
+        "tvt",
+        "ieee journal on selected areas in communications",
+        "jsac",
+        "acm transactions on sensor networks",
+        "tosn",
+        "computer networks",
+        "pervasive and mobile computing"
+      ],
+      "C": [
+        "wireless networks",
+        "ad hoc networks",
+        "sensors",
+        "electronics",
+        "future generation computer systems",
+        "ieice transactions on communications"
+      ]
+    }
+  }
+}

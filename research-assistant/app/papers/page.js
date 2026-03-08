@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getPaperQuality, qualityLabel } from '@/lib/paper-quality';
+import { ccfTierLabel, resolvePaperCcfTier } from '@/lib/ccf-tier';
 
-const FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
+const QUALITY_FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
+const CCF_FILTER_OPTIONS = ['all', 'A', 'B', 'C', 'NA'];
 
 function badge(text, bg = '#eef2ff', color = '#3730a3') {
   return (
@@ -12,10 +14,20 @@ function badge(text, bg = '#eef2ff', color = '#3730a3') {
   );
 }
 
+function buildPapersHref({ quality, ccfTier }) {
+  const query = new URLSearchParams();
+  if (quality && quality !== 'all') query.set('quality', quality);
+  if (ccfTier && ccfTier !== 'all') query.set('ccfTier', ccfTier);
+  const q = query.toString();
+  return q ? `/papers?${q}` : '/papers';
+}
+
 export default async function PapersPage({ searchParams }) {
   const sp = await searchParams;
-  const requested = sp?.quality;
-  const qualityFilter = FILTER_OPTIONS.includes(requested) ? requested : 'all';
+  const qualityRequested = sp?.quality;
+  const ccfRequested = String(sp?.ccfTier || '').toUpperCase();
+  const qualityFilter = QUALITY_FILTER_OPTIONS.includes(qualityRequested) ? qualityRequested : 'all';
+  const ccfFilter = CCF_FILTER_OPTIONS.includes(ccfRequested) ? ccfRequested : 'all';
 
   let dbError = null;
   let allPapers = [];
@@ -25,7 +37,13 @@ export default async function PapersPage({ searchParams }) {
     dbError = '文献数据读取失败，请检查数据库连接后重试。';
   }
 
-  const papers = allPapers.filter((p) => qualityFilter === 'all' || getPaperQuality(p) === qualityFilter);
+  const enrichedPapers = allPapers.map((p) => ({ ...p, ...resolvePaperCcfTier(p) }));
+
+  const papers = enrichedPapers.filter((p) => {
+    const qualityOk = qualityFilter === 'all' || getPaperQuality(p) === qualityFilter;
+    const ccfOk = ccfFilter === 'all' || p.ccfTier === ccfFilter;
+    return qualityOk && ccfOk;
+  });
 
   return (
     <main style={{ maxWidth: 1200, margin: '20px auto', padding: 24 }}>
@@ -54,12 +72,12 @@ export default async function PapersPage({ searchParams }) {
           <div style={{ fontWeight: 700, marginBottom: 10 }}>筛选与导出</div>
           <div style={{ color: '#64748b', fontSize: 13, marginBottom: 8 }}>按质量筛选</div>
           <div style={{ display: 'grid', gap: 8 }}>
-            {FILTER_OPTIONS.map((level) => {
+            {QUALITY_FILTER_OPTIONS.map((level) => {
               const active = qualityFilter === level;
               return (
                 <Link
                   key={level}
-                  href={level === 'all' ? '/papers' : `/papers?quality=${level}`}
+                  href={buildPapersHref({ quality: level, ccfTier: ccfFilter })}
                   style={{
                     padding: '8px 12px',
                     borderRadius: 10,
@@ -77,6 +95,31 @@ export default async function PapersPage({ searchParams }) {
             })}
           </div>
 
+          <div style={{ color: '#64748b', fontSize: 13, marginTop: 14, marginBottom: 8 }}>按 CCF 筛选</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {CCF_FILTER_OPTIONS.map((tier) => {
+              const active = ccfFilter === tier;
+              return (
+                <Link
+                  key={tier}
+                  href={buildPapersHref({ quality: qualityFilter, ccfTier: tier })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: active ? '1px solid #7c3aed' : '1px solid #d1d5db',
+                    background: active ? '#f5f3ff' : '#fff',
+                    color: active ? '#6d28d9' : '#374151',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {tier === 'all' ? '全部' : ccfTierLabel(tier)}
+                </Link>
+              );
+            })}
+          </div>
+
           <div style={{ marginTop: 16, fontSize: 13, color: '#475569' }}>当前结果：{papers.length} 条</div>
 
           <div style={{ marginTop: 14, display: 'grid', gap: 8 }}>
@@ -88,7 +131,7 @@ export default async function PapersPage({ searchParams }) {
 
         <section style={listPaneStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontWeight: 700 }}>文献列表 · {qualityLabel(qualityFilter)}</div>
+            <div style={{ fontWeight: 700 }}>文献列表 · {qualityLabel(qualityFilter)} · {ccfFilter === 'all' ? 'CCF-全部' : ccfTierLabel(ccfFilter)}</div>
             <a href="/api/papers" style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>查看原始 API</a>
           </div>
 
@@ -103,7 +146,7 @@ export default async function PapersPage({ searchParams }) {
                       {p.source === 'arXiv:auto' ? badge('自动抓取') : null}
                     </div>
                     <div style={{ marginTop: 8, color: '#475569', fontSize: 13 }}>
-                      年份：{p.year || '-'} ｜ 质量：{qualityLabel(level)} ｜ 来源：{p.source || '-'}
+                      年份：{p.year || '-'} ｜ 质量：{qualityLabel(level)} ｜ CCF：{ccfTierLabel(p.ccfTier)} ｜ 来源：{p.source || '-'}
                     </div>
                     <div style={{ marginTop: 10, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                       <a href={`/api/papers/${p.id}/bibtex`} style={actionLinkStyle}>导出 BibTeX</a>
