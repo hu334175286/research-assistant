@@ -7,6 +7,7 @@ import { readLatestVerifyResult } from '@/lib/verify-runner';
 import { readCurrentModel } from '@/lib/model-runtime-status';
 import { getRuntimePortHealth } from '@/lib/runtime-port-health';
 import { loadDemoExamples } from '@/lib/demo-examples';
+import { ui, statusPill } from '@/app/components/unified-ui';
 
 const healthColorMap = {
   green: { bg: '#dcfce7', fg: '#166534', border: '#86efac', text: '绿色' },
@@ -72,7 +73,7 @@ export default async function QuickPage() {
   ];
 
   return (
-    <main style={{ maxWidth: 1200, margin: '24px auto', padding: 24 }}>
+    <main style={ui.page}>
       <section style={heroStyle}>
         <div>
           <h1 style={{ margin: 0, fontSize: 30 }}>Quick 工作台</h1>
@@ -115,6 +116,7 @@ export default async function QuickPage() {
             value={runtimeHealth.activePort || '未检测到活动服务'}
             hint={runtimeHealth.activeBaseUrl || recommended}
           />
+
         </div>
       </section>
 
@@ -172,8 +174,10 @@ export default async function QuickPage() {
               return (
                 <div key={item.model} style={{ ...healthCardStyle, borderColor: palette.border }}>
                   <div style={{ fontWeight: 700 }}>{item.model}</div>
-                  <div style={{ marginTop: 8, display: 'inline-block', padding: '2px 10px', borderRadius: 999, background: palette.bg, color: palette.fg, fontSize: 12, fontWeight: 700 }}>
-                    {palette.text}
+                  <div style={{ marginTop: 8 }}>
+                    <span style={statusPill(item.health === 'green' ? 'success' : item.health === 'yellow' ? 'warning' : 'danger')}>
+                      {palette.text}
+                    </span>
                   </div>
                   <div style={{ marginTop: 10, fontSize: 13, color: '#334155' }}>最近失败次数：{item.failCount}</div>
                   <div style={{ marginTop: 4, fontSize: 13, color: '#334155' }}>最近切换事件数：{item.switchCount}</div>
@@ -223,16 +227,7 @@ function StatusCard({ title, value, hint }) {
   );
 }
 
-const heroStyle = {
-  background: 'linear-gradient(135deg, #0f172a, #1d4ed8)',
-  color: '#fff',
-  borderRadius: 16,
-  padding: 18,
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 16,
-  flexWrap: 'wrap',
-};
+const heroStyle = ui.hero;
 
 const heroActionsStyle = {
   display: 'flex',
@@ -242,38 +237,24 @@ const heroActionsStyle = {
 };
 
 const primaryBtnStyle = {
-  padding: '10px 14px',
-  borderRadius: 10,
+  ...ui.buttonPrimary,
   background: '#fff',
   color: '#1d4ed8',
-  fontWeight: 700,
-  textDecoration: 'none',
+  border: '1px solid #fff',
 };
 
 const secondaryBtnStyle = {
-  ...primaryBtnStyle,
+  ...ui.buttonGhost,
   background: 'rgba(255,255,255,0.15)',
   color: '#fff',
   border: '1px solid rgba(255,255,255,0.3)',
 };
 
-const sectionTitleStyle = {
-  marginTop: 0,
-  marginBottom: 10,
-};
+const sectionTitleStyle = ui.sectionTitle;
 
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: 12,
-};
+const gridStyle = ui.grid;
 
-const panelStyle = {
-  background: '#fff',
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  padding: 14,
-};
+const panelStyle = ui.card;
 
 const panelActionCardStyle = {
   ...panelStyle,
@@ -301,30 +282,16 @@ const smallLinkStyle = {
   wordBreak: 'break-all',
 };
 
-const emptyStateStyle = {
-  background: '#fff7ed',
-  border: '1px solid #fed7aa',
-  borderRadius: 12,
-  padding: 14,
-  color: '#9a3412',
-};
+const emptyStateStyle = ui.empty;
 
 const errorStateStyle = {
-  background: '#fef2f2',
-  border: '1px solid #fecaca',
-  borderRadius: 12,
-  padding: 14,
+  ...ui.error,
   marginTop: 14,
-  color: '#991b1b',
 };
 
 const emptyHintStyle = {
+  ...ui.empty,
   marginTop: 10,
-  background: '#fff7ed',
-  color: '#9a3412',
-  border: '1px solid #fed7aa',
-  borderRadius: 10,
-  padding: 10,
   fontSize: 13,
 };
 

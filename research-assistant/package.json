@@ -14,6 +14,7 @@
     "papers:auto-fetch": "node scripts/fetch-papers.js",
     "scheduler": "node scripts/scheduler.js",
     "smoke": "node scripts/smoke-check.js",
+    "health:check": "node scripts/health-check.js",
     "check:datasets": "node scripts/check-datasets-flow.js",
     "check:ccf": "node scripts/check-ccf-coverage.js",
     "quick:open": "node scripts/open-quick.js",

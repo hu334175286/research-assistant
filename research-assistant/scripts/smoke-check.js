@@ -76,28 +76,44 @@ function isPortFree(port) {
   });
 }
 
+async function findFreePort(start = 3200, end = 3299) {
+  for (let port = start; port <= end; port++) {
+    if (await isPortFree(port)) {
+      return port;
+    }
+  }
+  return null;
+}
+
 async function resolveTarget() {
+  const mode = process.env.SMOKE_SERVER_MODE || 'start';
+  const forceSpawn = process.env.SMOKE_FORCE_SPAWN === '1' || mode === 'start';
+
   if (process.env.SMOKE_BASE_URL) {
     const explicit = normalizeBaseUrl(process.env.SMOKE_BASE_URL);
     const ready = await isServerReady(explicit.baseUrl);
     return {
       ...explicit,
-      usingExistingServer: ready,
-      shouldStartServer: !ready,
+      usingExistingServer: ready && !forceSpawn,
+      shouldStartServer: forceSpawn || !ready,
       strategy: 'explicit'
     };
   }
 
+  const existingReady = [];
   for (const port of DEFAULT_PORT_CANDIDATES) {
     const candidateBaseUrl = `http://127.0.0.1:${port}`;
     if (await isServerReady(candidateBaseUrl)) {
-      return {
-        baseUrl: candidateBaseUrl,
-        port,
-        usingExistingServer: true,
-        shouldStartServer: false,
-        strategy: 'existing'
-      };
+      existingReady.push({ port, baseUrl: candidateBaseUrl });
+      if (!forceSpawn) {
+        return {
+          baseUrl: candidateBaseUrl,
+          port,
+          usingExistingServer: true,
+          shouldStartServer: false,
+          strategy: 'existing'
+        };
+      }
     }
 
     if (await isPortFree(port)) {
@@ -106,12 +122,33 @@ async function resolveTarget() {
         port,
         usingExistingServer: false,
         shouldStartServer: true,
-        strategy: 'fallback'
+        strategy: forceSpawn ? 'isolated' : 'fallback'
       };
     }
   }
 
-  throw new Error(`端口均不可用（候选：${DEFAULT_PORT_CANDIDATES.join(', ')}）`);
+  if (existingReady.length) {
+    const picked = existingReady[0];
+    return {
+      ...picked,
+      usingExistingServer: true,
+      shouldStartServer: false,
+      strategy: 'existing-all-busy'
+    };
+  }
+
+  const extraPort = await findFreePort();
+  if (extraPort) {
+    return {
+      baseUrl: `http://127.0.0.1:${extraPort}`,
+      port: extraPort,
+      usingExistingServer: false,
+      shouldStartServer: true,
+      strategy: 'dynamic-free-port'
+    };
+  }
+
+  throw new Error(`端口均不可用（候选：${DEFAULT_PORT_CANDIDATES.join(', ')}，扩展区间 3200-3299）`);
 }
 
 function startDevServer(port) {

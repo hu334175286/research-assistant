@@ -97,7 +97,8 @@ export async function runVerify({ dryRun = false } = {}) {
 
     if (buildResult.ok) {
       const smokeResult = await runCommand(npmCmd, ['run', 'smoke'], {
-        SMOKE_BASE_URL: process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3124',
+        SMOKE_SERVER_MODE: process.env.SMOKE_SERVER_MODE || 'start',
+        SMOKE_FORCE_SPAWN: process.env.SMOKE_FORCE_SPAWN || '1',
       });
       steps.push(buildStep('smoke', npmCmd, ['run', 'smoke'], smokeResult));
     } else {
