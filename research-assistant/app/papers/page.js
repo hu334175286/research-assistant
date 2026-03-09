@@ -6,6 +6,13 @@ import { ui, statusPill } from '@/app/components/unified-ui';
 
 const QUALITY_FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
 const CCF_FILTER_OPTIONS = ['all', 'A', 'B', 'C', 'NA'];
+const YEAR_RANGE_OPTIONS = [
+  { key: 'all', label: '全部年份', yearFrom: null, yearTo: null },
+  { key: '2024+', label: '2024+', yearFrom: 2024, yearTo: null },
+  { key: '2020-2023', label: '2020-2023', yearFrom: 2020, yearTo: 2023 },
+  { key: '2015-2019', label: '2015-2019', yearFrom: 2015, yearTo: 2019 },
+  { key: 'before-2015', label: '2014及更早', yearFrom: null, yearTo: 2014 },
+];
 
 function badge(text) {
   return (
@@ -15,18 +22,47 @@ function badge(text) {
   );
 }
 
-function buildPapersHref({ quality, ccfTier }) {
+function parseYear(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.floor(n);
+}
+
+function buildPapersHref({ quality, ccfTier, source, yearFrom, yearTo }) {
   const query = new URLSearchParams();
   if (quality && quality !== 'all') query.set('quality', quality);
   if (ccfTier && ccfTier !== 'all') query.set('ccfTier', ccfTier);
+  if (source && source !== 'all') query.set('source', source);
+  if (yearFrom != null) query.set('yearFrom', String(yearFrom));
+  if (yearTo != null) query.set('yearTo', String(yearTo));
   const q = query.toString();
   return q ? `/papers?${q}` : '/papers';
 }
 
+function getYearRangeSummary(yearFrom, yearTo) {
+  if (yearFrom == null && yearTo == null) return '全部年份';
+  if (yearFrom != null && yearTo != null) return `${yearFrom}-${yearTo}`;
+  if (yearFrom != null) return `${yearFrom}+`;
+  return `${yearTo}及更早`;
+}
+
+function sourceLabel(value) {
+  if (value === 'all') return '来源-全部';
+  if (value === 'arXiv:auto') return '来源-arXiv:auto';
+  if (value === 'arxiv') return '来源-arXiv';
+  return `来源-${value}`;
+}
+
 export default async function PapersPage({ searchParams }) {
   const sp = await searchParams;
-  const qualityRequested = sp?.quality;
-  const ccfRequested = String(sp?.ccfTier || '').toUpperCase();
+  const qualityRequested = String(sp?.quality || '').toLowerCase();
+  const ccfRequested = String(sp?.ccfTier || sp?.ccf || '').toUpperCase();
+  const sourceRequested = String(sp?.source || sp?.src || '').trim();
+
+  const yearFromRequested = parseYear(sp?.yearFrom ?? sp?.fromYear ?? sp?.startYear);
+  const yearToRequested = parseYear(sp?.yearTo ?? sp?.toYear ?? sp?.endYear);
+
   const qualityFilter = QUALITY_FILTER_OPTIONS.includes(qualityRequested) ? qualityRequested : 'all';
   const ccfFilter = CCF_FILTER_OPTIONS.includes(ccfRequested) ? ccfRequested : 'all';
 
@@ -39,12 +75,27 @@ export default async function PapersPage({ searchParams }) {
   }
 
   const enrichedPapers = allPapers.map((p) => ({ ...p, ...resolvePaperCcfTier(p) }));
+  const sourceOptions = ['all', ...new Set(enrichedPapers.map((p) => String(p.source || '').trim()).filter(Boolean))];
+  const sourceFilter = sourceOptions.includes(sourceRequested) ? sourceRequested : 'all';
 
   const papers = enrichedPapers.filter((p) => {
     const qualityOk = qualityFilter === 'all' || getPaperQuality(p) === qualityFilter;
     const ccfOk = ccfFilter === 'all' || p.ccfTier === ccfFilter;
-    return qualityOk && ccfOk;
+    const sourceOk = sourceFilter === 'all' || String(p.source || '').trim() === sourceFilter;
+
+    const y = Number(p.year);
+    const yearOkFrom = yearFromRequested == null || !Number.isFinite(y) || y >= yearFromRequested;
+    const yearOkTo = yearToRequested == null || !Number.isFinite(y) || y <= yearToRequested;
+
+    return qualityOk && ccfOk && sourceOk && yearOkFrom && yearOkTo;
   });
+
+  const activeSummary = [
+    qualityLabel(qualityFilter),
+    ccfFilter === 'all' ? 'CCF-全部' : ccfTierLabel(ccfFilter),
+    sourceLabel(sourceFilter),
+    `年份-${getYearRangeSummary(yearFromRequested, yearToRequested)}`,
+  ].join(' · ');
 
   return (
     <main style={ui.page}>
@@ -78,7 +129,7 @@ export default async function PapersPage({ searchParams }) {
               return (
                 <Link
                   key={level}
-                  href={buildPapersHref({ quality: level, ccfTier: ccfFilter })}
+                  href={buildPapersHref({ quality: level, ccfTier: ccfFilter, source: sourceFilter, yearFrom: yearFromRequested, yearTo: yearToRequested })}
                   style={{
                     padding: '8px 12px',
                     borderRadius: 10,
@@ -103,7 +154,7 @@ export default async function PapersPage({ searchParams }) {
               return (
                 <Link
                   key={tier}
-                  href={buildPapersHref({ quality: qualityFilter, ccfTier: tier })}
+                  href={buildPapersHref({ quality: qualityFilter, ccfTier: tier, source: sourceFilter, yearFrom: yearFromRequested, yearTo: yearToRequested })}
                   style={{
                     padding: '8px 12px',
                     borderRadius: 10,
@@ -121,10 +172,66 @@ export default async function PapersPage({ searchParams }) {
             })}
           </div>
 
+          <div style={{ color: '#64748b', fontSize: 13, marginTop: 14, marginBottom: 8 }}>按来源筛选</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {sourceOptions.map((source) => {
+              const active = sourceFilter === source;
+              return (
+                <Link
+                  key={source}
+                  href={buildPapersHref({ quality: qualityFilter, ccfTier: ccfFilter, source, yearFrom: yearFromRequested, yearTo: yearToRequested })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: active ? '1px solid #0f766e' : '1px solid #d1d5db',
+                    background: active ? '#f0fdfa' : '#fff',
+                    color: active ? '#0f766e' : '#374151',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {source === 'all' ? '全部来源' : source}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div style={{ color: '#64748b', fontSize: 13, marginTop: 14, marginBottom: 8 }}>按年份筛选</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {YEAR_RANGE_OPTIONS.map((option) => {
+              const active = yearFromRequested === option.yearFrom && yearToRequested === option.yearTo;
+              return (
+                <Link
+                  key={option.key}
+                  href={buildPapersHref({
+                    quality: qualityFilter,
+                    ccfTier: ccfFilter,
+                    source: sourceFilter,
+                    yearFrom: option.yearFrom,
+                    yearTo: option.yearTo,
+                  })}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: active ? '1px solid #b45309' : '1px solid #d1d5db',
+                    background: active ? '#fffbeb' : '#fff',
+                    color: active ? '#92400e' : '#374151',
+                    textDecoration: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {option.label}
+                </Link>
+              );
+            })}
+          </div>
+
           <div style={{ marginTop: 16, fontSize: 13, color: '#475569' }}>当前结果：{papers.length} 条</div>
 
           <div style={{ marginTop: 14, display: 'grid', gap: 8 }}>
-            <a href={`/api/papers/bibtex/export?quality=${qualityFilter}`} style={sideLinkStyle}>导出当前筛选</a>
+            <a href={`/api/papers/bibtex/export?quality=${qualityFilter}&yearFrom=${yearFromRequested ?? ''}&yearTo=${yearToRequested ?? ''}`} style={sideLinkStyle}>导出当前筛选</a>
             <a href="/api/papers/bibtex/export?quality=high&yearFrom=2023&limit=100" style={sideLinkStyle}>导出高质量(2023+)</a>
             <a href="/api/papers/bibtex/export" style={sideLinkStyle}>导出全部 BibTeX</a>
           </div>
@@ -132,7 +239,7 @@ export default async function PapersPage({ searchParams }) {
 
         <section style={listPaneStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
-            <div style={{ fontWeight: 700 }}>文献列表 · {qualityLabel(qualityFilter)} · {ccfFilter === 'all' ? 'CCF-全部' : ccfTierLabel(ccfFilter)}</div>
+            <div style={{ fontWeight: 700 }}>文献列表 · {activeSummary}</div>
             <a href="/api/papers" style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>查看原始 API</a>
           </div>
 
@@ -162,7 +269,7 @@ export default async function PapersPage({ searchParams }) {
           ) : (
             <div style={emptyStateStyle}>
               <strong>当前筛选条件下暂无文献</strong>
-              <p style={{ margin: '8px 0 0' }}>建议操作：1) 放宽质量或 CCF 筛选；2) 访问 /api/papers/auto-fetch?run=1 抓取新文献；3) 使用“查看原始 API”排查数据是否写入。</p>
+              <p style={{ margin: '8px 0 0' }}>建议操作：1) 放宽质量、CCF、来源或年份筛选；2) 访问 /api/papers/auto-fetch?run=1 抓取新文献；3) 使用“查看原始 API”排查数据是否写入。</p>
             </div>
           )}
         </section>
