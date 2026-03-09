@@ -83,7 +83,10 @@ npm run auto:cycle
   - `venue.regex` / `ccf.regex`：按正则匹配，支持 `tier/pattern/flags/matchedBy`
 - 匹配优先级：`whitelist > regex > 现有 venues 列表回退`
 - 字段兼容：输出仍为 `venueTier` 与 `venueMatchedBy`（CCF 为 `ccfTier` 与 `ccfMatchedBy`）
-- 最小验证：`npm run check:venue-rules`
+- 回归集一键验证：`npm run check:venue-rules`
+  - 覆盖类型：whitelist/regex 的正例、反例、边界样例
+  - 关键断言：`venueTier` + `venueMatchedBy`
+  - 输出格式：逐条 `[pass]/[fail]` + 汇总 `[summary] total/pass/fail`
 
 ## Papers API 筛选参数（向后兼容）
 `GET /api/papers` 默认仍返回最近 50 条（与旧行为一致）。
