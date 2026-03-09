@@ -84,3 +84,23 @@ npm run auto:cycle
 - 匹配优先级：`whitelist > regex > 现有 venues 列表回退`
 - 字段兼容：输出仍为 `venueTier` 与 `venueMatchedBy`（CCF 为 `ccfTier` 与 `ccfMatchedBy`）
 - 最小验证：`npm run check:venue-rules`
+
+## Papers API 筛选参数（向后兼容）
+`GET /api/papers` 默认仍返回最近 50 条（与旧行为一致）。
+
+可选查询参数（新）：
+- `quality`: `all | high | medium | low`
+- `ccfTier`（或 `ccf`）: `all | A | B | C | NA`
+- `source`（或 `src`）: 来源字符串（如 `arXiv:auto`）
+- `yearFrom` / `yearTo`（兼容 `fromYear/startYear` 与 `toYear/endYear`）
+- `take`（或 `limit`）: 返回条数上限（最大 500）
+- `includeMeta=1`: 返回 `{ items, meta }` 结构（包含 sourceOptions 等）
+
+示例：
+```bash
+# 过滤 2023+ 的高质量 CCF-A 论文，并返回元信息
+curl "http://127.0.0.1:3000/api/papers?quality=high&ccfTier=A&yearFrom=2023&includeMeta=1"
+
+# 按来源筛选，兼容旧参数名 src/limit
+curl "http://127.0.0.1:3000/api/papers?src=arXiv:auto&limit=100"
+```

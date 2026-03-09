@@ -18,6 +18,7 @@
     "check:datasets": "node scripts/check-datasets-flow.js",
     "check:ccf": "node scripts/check-ccf-coverage.js",
     "check:venue-rules": "node scripts/test-venue-rules-v2.mjs",
+    "check:reports": "node scripts/check-daily-report-view.mjs",
     "quick:open": "node scripts/open-quick.js",
     "verify": "npm run build && npm run smoke",
     "auto:cycle": "node scripts/dev-auto-cycle.js",
