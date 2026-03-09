@@ -44,6 +44,14 @@
   - 实时显示「总条数 vs 当前命中条数」
 - 适配当前 `Experiment` + `Dataset` 结构，无需迁移
 
+## 已实现（D5-日报筛选与状态标注）
+- 页面：`/reports/daily`
+- 新增可交付能力（不改动数据库结构）：
+  - 关键词检索（`dayKey` / `contentShort` / `contentFull`）
+  - 状态筛选：全部 / 完整 / 缺摘要 / 缺全文
+  - 列表状态标注 + 命中数统计（总数 vs 当前筛选）
+- 适配当前 `DailyReport` 字段（`dayKey`、`contentShort`、`contentFull`），无需迁移
+
 ## 本地启动
 ```bash
 cp .env.example .env
@@ -63,6 +71,11 @@ npm run auto:cycle
 ```
 
 输出报告：`reports/automation/latest.md`（包含 build / smoke / auto-fetch 结果）
+
+## 已知问题与修复（简短）
+- 症状：`next build` 在混合 `app/` + `pages/` 场景报错 `Cannot find module for page: /_document`。
+- 根因：启用了 Pages Router（存在 `pages/_app.js`）但缺少（或被误删）`pages/_document.js` 时，构建阶段无法解析 `/_document`。
+- 最小修复：保留一个最小实现的 `pages/_document.js`（仅 `Html/Head/Main/NextScript`），不影响现有 App Router 页面。
 
 ## 顶刊顶会识别规则 v2（使用方法）
 - 配置文件：`config/venue-rules.v2.json`
