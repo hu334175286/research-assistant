@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
-import { getPaperQuality, qualityLabel } from '@/lib/paper-quality';
-import { ccfTierLabel, resolvePaperCcfTier } from '@/lib/ccf-tier';
+import { headers } from 'next/headers';
+import { qualityLabel } from '@/lib/paper-quality';
+import { ccfTierLabel } from '@/lib/ccf-tier';
 import { ui, statusPill } from '@/app/components/unified-ui';
 
 const QUALITY_FILTER_OPTIONS = ['all', 'high', 'medium', 'low'];
@@ -54,6 +54,24 @@ function sourceLabel(value) {
   return `来源-${value}`;
 }
 
+async function fetchPapersByApi(filters) {
+  const hdrs = await headers();
+  const host = hdrs.get('x-forwarded-host') || hdrs.get('host');
+  const proto = hdrs.get('x-forwarded-proto') || 'http';
+  if (!host) throw new Error('missing host');
+
+  const query = new URLSearchParams({ includeMeta: '1', take: '200' });
+  if (filters.quality && filters.quality !== 'all') query.set('quality', filters.quality);
+  if (filters.ccfTier && filters.ccfTier !== 'all') query.set('ccfTier', filters.ccfTier);
+  if (filters.source && filters.source !== 'all') query.set('source', filters.source);
+  if (filters.yearFrom != null) query.set('yearFrom', String(filters.yearFrom));
+  if (filters.yearTo != null) query.set('yearTo', String(filters.yearTo));
+
+  const res = await fetch(`${proto}://${host}/api/papers?${query.toString()}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`api error: ${res.status}`);
+  return res.json();
+}
+
 export default async function PapersPage({ searchParams }) {
   const sp = await searchParams;
   const qualityRequested = String(sp?.quality || '').toLowerCase();
@@ -67,28 +85,27 @@ export default async function PapersPage({ searchParams }) {
   const ccfFilter = CCF_FILTER_OPTIONS.includes(ccfRequested) ? ccfRequested : 'all';
 
   let dbError = null;
-  let allPapers = [];
+  let papers = [];
+  let sourceOptions = ['all'];
+  let sourceFilter = 'all';
+
   try {
-    allPapers = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+    const payload = await fetchPapersByApi({
+      quality: qualityFilter,
+      ccfTier: ccfFilter,
+      source: sourceRequested || 'all',
+      yearFrom: yearFromRequested,
+      yearTo: yearToRequested,
+    });
+
+    papers = Array.isArray(payload?.items) ? payload.items : [];
+    sourceOptions = Array.isArray(payload?.meta?.sourceOptions) && payload.meta.sourceOptions.length
+      ? payload.meta.sourceOptions
+      : ['all'];
+    sourceFilter = sourceOptions.includes(sourceRequested) ? sourceRequested : 'all';
   } catch {
     dbError = '文献数据读取失败，请检查数据库连接后重试。';
   }
-
-  const enrichedPapers = allPapers.map((p) => ({ ...p, ...resolvePaperCcfTier(p) }));
-  const sourceOptions = ['all', ...new Set(enrichedPapers.map((p) => String(p.source || '').trim()).filter(Boolean))];
-  const sourceFilter = sourceOptions.includes(sourceRequested) ? sourceRequested : 'all';
-
-  const papers = enrichedPapers.filter((p) => {
-    const qualityOk = qualityFilter === 'all' || getPaperQuality(p) === qualityFilter;
-    const ccfOk = ccfFilter === 'all' || p.ccfTier === ccfFilter;
-    const sourceOk = sourceFilter === 'all' || String(p.source || '').trim() === sourceFilter;
-
-    const y = Number(p.year);
-    const yearOkFrom = yearFromRequested == null || !Number.isFinite(y) || y >= yearFromRequested;
-    const yearOkTo = yearToRequested == null || !Number.isFinite(y) || y <= yearToRequested;
-
-    return qualityOk && ccfOk && sourceOk && yearOkFrom && yearOkTo;
-  });
 
   const activeSummary = [
     qualityLabel(qualityFilter),
@@ -96,6 +113,15 @@ export default async function PapersPage({ searchParams }) {
     sourceLabel(sourceFilter),
     `年份-${getYearRangeSummary(yearFromRequested, yearToRequested)}`,
   ].join(' · ');
+
+  const uiHref = buildPapersHref({
+    quality: qualityFilter,
+    ccfTier: ccfFilter,
+    source: sourceFilter,
+    yearFrom: yearFromRequested,
+    yearTo: yearToRequested,
+  });
+  const apiHref = `${uiHref.replace('/papers', '/api/papers')}${uiHref.includes('?') ? '&' : '?'}includeMeta=1`;
 
   return (
     <main style={ui.page}>
@@ -240,13 +266,13 @@ export default async function PapersPage({ searchParams }) {
         <section style={listPaneStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>
             <div style={{ fontWeight: 700 }}>文献列表 · {activeSummary}</div>
-            <a href="/api/papers" style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>查看原始 API</a>
+            <a href={apiHref} style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: 13 }}>查看原始 API</a>
           </div>
 
           {papers.length ? (
             <div style={{ display: 'grid', gap: 10 }}>
               {papers.map((p) => {
-                const level = getPaperQuality(p);
+                const level = p.quality || 'low';
                 return (
                   <article key={p.id} style={paperCardStyle}>
                     <div style={{ fontWeight: 700, lineHeight: 1.4 }}>

@@ -87,6 +87,7 @@ npm run auto:cycle
 
 ## Papers API 筛选参数（向后兼容）
 `GET /api/papers` 默认仍返回最近 50 条（与旧行为一致）。
+`/papers` 页面已改为调用该 API（`includeMeta=1`）完成筛选，避免在前端页面内存里全量过滤。
 
 可选查询参数（新）：
 - `quality`: `all | high | medium | low`
