@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const box = {
   background: '#fff',
@@ -20,6 +20,36 @@ const inputStyle = {
 export default function ExperimentsClient({ datasets, experiments }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [datasetFilter, setDatasetFilter] = useState('all');
+
+  const filteredExperiments = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+
+    return experiments.filter((e) => {
+      const matchDataset = datasetFilter === 'all'
+        ? true
+        : datasetFilter === 'none'
+          ? !e.datasetId
+          : e.datasetId === datasetFilter;
+      if (!matchDataset) return false;
+
+      if (!q) return true;
+
+      const searchFields = [
+        e.name,
+        e.hypothesis,
+        e.conclusion,
+        e.dataset?.name,
+        e.datasetVersionSnapshot,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchFields.includes(q);
+    });
+  }, [experiments, keyword, datasetFilter]);
 
   async function handleCreate(event) {
     event.preventDefault();
@@ -57,9 +87,34 @@ export default function ExperimentsClient({ datasets, experiments }) {
     <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
       <section style={box}>
         <h3 style={{ marginTop: 0 }}>实验列表</h3>
-        {!experiments.length ? <p style={{ color: '#6b7280' }}>暂无实验记录。</p> : null}
+        <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+          <input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="检索：名称/假设/结论/数据集"
+            style={inputStyle}
+          />
+          <select
+            value={datasetFilter}
+            onChange={(e) => setDatasetFilter(e.target.value)}
+            style={inputStyle}
+          >
+            <option value="all">全部数据集</option>
+            <option value="none">仅未关联数据集</option>
+            {datasets.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}（{d.type}/{d.source}，version: {d.version || '-'}）
+              </option>
+            ))}
+          </select>
+          <div style={{ color: '#6b7280', fontSize: 12 }}>
+            共 {experiments.length} 条，当前显示 {filteredExperiments.length} 条
+          </div>
+        </div>
+
+        {!filteredExperiments.length ? <p style={{ color: '#6b7280' }}>无匹配实验记录。</p> : null}
         <ul style={{ paddingLeft: 20, margin: 0, display: 'grid', gap: 10 }}>
-          {experiments.map((e) => (
+          {filteredExperiments.map((e) => (
             <li key={e.id}>
               <strong>{e.name}</strong>
               <div style={{ color: '#4b5563', fontSize: 13 }}>
