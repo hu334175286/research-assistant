@@ -24,7 +24,7 @@
 - 自动抓取API：`/api/papers/auto-fetch`（状态） / `?run=1`（立即执行）
 - 质量汇总API：`/api/papers/quality-summary`
 - 抓取源：arXiv（按研究方向关键词 + 类别过滤 + 去重入库）
-- 顶刊顶会识别 v1：入库时写入 `venueTier`（A/B/unknown）与 `venueMatchedBy`
+- 顶刊顶会识别 v2：支持 `config/venue-rules.v2.json` 可配置规则（白名单 + regex），并保持入库字段 `venueTier`（A/B/unknown）与 `venueMatchedBy` 兼容
 - 仪表盘新增：今日自动抓取数 + 最新自动抓取Top5
 - 调度器新增：按 `research-focus.json` 的 `fetchEveryMinutes` 自动抓取
 
@@ -63,3 +63,11 @@ npm run auto:cycle
 ```
 
 输出报告：`reports/automation/latest.md`（包含 build / smoke / auto-fetch 结果）
+
+## 顶刊顶会识别规则 v2（使用方法）
+- 配置文件：`config/venue-rules.v2.json`
+  - `venue.whitelist` / `ccf.whitelist`：按会刊与等级精确短语匹配
+  - `venue.regex` / `ccf.regex`：按正则匹配，支持 `tier/pattern/flags/matchedBy`
+- 匹配优先级：`whitelist > regex > 现有 venues 列表回退`
+- 字段兼容：输出仍为 `venueTier` 与 `venueMatchedBy`（CCF 为 `ccfTier` 与 `ccfMatchedBy`）
+- 最小验证：`npm run check:venue-rules`

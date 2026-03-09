@@ -1,0 +1,75 @@
+{
+  "version": "v2",
+  "enabled": true,
+  "venue": {
+    "whitelist": {
+      "conference": {
+        "A": [
+          "acm international conference on mobile computing and networking",
+          "acm conference on embedded networked sensor systems"
+        ],
+        "B": [
+          "ieee international conference on computer communications"
+        ]
+      },
+      "journal": {
+        "A": [
+          "proceedings of the acm on interactive, mobile, wearable and ubiquitous technologies"
+        ],
+        "B": [
+          "ieee internet of things journal"
+        ]
+      }
+    },
+    "regex": [
+      {
+        "tier": "A",
+        "pattern": "\\b(proc\\.?\\s*)?acm\\s+imwut\\b",
+        "flags": "i",
+        "matchedBy": "venue-regex:imwut"
+      },
+      {
+        "tier": "B",
+        "pattern": "\\bieee\\s+infocom\\b",
+        "flags": "i",
+        "matchedBy": "venue-regex:infocom"
+      }
+    ]
+  },
+  "ccf": {
+    "whitelist": {
+      "conference": {
+        "A": [
+          "conference on neural information processing systems"
+        ],
+        "B": [
+          "international conference on distributed computing systems"
+        ],
+        "C": []
+      },
+      "journal": {
+        "A": [
+          "ieee/acm transactions on networking"
+        ],
+        "B": [
+          "ieee transactions on parallel and distributed systems"
+        ],
+        "C": []
+      }
+    },
+    "regex": [
+      {
+        "tier": "A",
+        "pattern": "\\b(neurips|nips)\\b",
+        "flags": "i",
+        "matchedBy": "ccf-regex:neurips"
+      },
+      {
+        "tier": "B",
+        "pattern": "\\bicdcs\\b",
+        "flags": "i",
+        "matchedBy": "ccf-regex:icdcs"
+      }
+    ]
+  }
+}

@@ -10,8 +10,17 @@ function loadConfig() {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
+function loadVenueRules() {
+  const p = path.join(process.cwd(), 'config', 'venue-rules.v2.json');
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return { enabled: false };
+  }
+}
+
 function extract(tag, text) {
-  const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+  const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\/${tag}>`));
   return m ? m[1].trim().replace(/\n+/g, ' ') : '';
 }
 
@@ -31,7 +40,7 @@ function parseEntries(xml) {
   });
 }
 
-function getVenueKeywords(cfg = {}) {
+function getVenueKeywords(cfg = {}, rules = {}) {
   const out = [];
   for (const groupName of ['conference', 'journal']) {
     const group = (cfg.venues || {})[groupName] || {};
@@ -39,11 +48,61 @@ function getVenueKeywords(cfg = {}) {
       for (const name of group[tier] || []) out.push(String(name).toLowerCase());
     }
   }
+
+  if (rules?.enabled) {
+    for (const groupName of ['conference', 'journal']) {
+      const group = (rules?.venue?.whitelist || {})[groupName] || {};
+      for (const tier of ['A', 'B']) {
+        for (const name of group[tier] || []) out.push(String(name).toLowerCase());
+      }
+    }
+  }
+
   return [...new Set(out)];
 }
 
-function resolveVenueTier(item, cfg = {}) {
+function matchFromWhitelist(text, whitelist = {}, tiers = []) {
+  for (const groupName of ['conference', 'journal']) {
+    const group = whitelist[groupName] || {};
+    for (const tier of tiers) {
+      for (const rawName of group[tier] || []) {
+        const name = String(rawName || '').toLowerCase();
+        if (name && text.includes(name)) {
+          return { tier, matchedBy: `rule-whitelist:${groupName}:${tier}:${rawName}` };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function matchFromRegex(text, regexRules = [], tiers = []) {
+  for (const rule of regexRules || []) {
+    const tier = String(rule?.tier || '').toUpperCase();
+    if (!tiers.includes(tier) || !rule?.pattern) continue;
+    try {
+      const re = new RegExp(rule.pattern, rule.flags || 'i');
+      if (re.test(text)) {
+        return { tier, matchedBy: rule.matchedBy || `rule-regex:${tier}:${rule.pattern}` };
+      }
+    } catch {
+      // ignore broken regex
+    }
+  }
+  return null;
+}
+
+function resolveVenueTier(item, cfg = {}, rules = {}) {
   const text = [item.title, item.summary, item.journalRef, item.comment].join(' ').toLowerCase();
+
+  if (rules?.enabled) {
+    const w = matchFromWhitelist(text, rules?.venue?.whitelist, ['A', 'B']);
+    if (w) return { venueTier: w.tier, venueMatchedBy: w.matchedBy };
+
+    const r = matchFromRegex(text, rules?.venue?.regex, ['A', 'B']);
+    if (r) return { venueTier: r.tier, venueMatchedBy: r.matchedBy };
+  }
+
   for (const groupName of ['conference', 'journal']) {
     const group = (cfg.venues || {})[groupName] || {};
     for (const tier of ['A', 'B']) {
@@ -63,8 +122,17 @@ function loadCcfConfig() {
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-function resolveCcfTier(item, ccf = {}) {
+function resolveCcfTier(item, ccf = {}, rules = {}) {
   const text = [item.title, item.summary, item.journalRef, item.comment].join(' ').toLowerCase();
+
+  if (rules?.enabled) {
+    const w = matchFromWhitelist(text, rules?.ccf?.whitelist, ['A', 'B', 'C']);
+    if (w) return { ccfTier: w.tier, ccfMatchedBy: w.matchedBy };
+
+    const r = matchFromRegex(text, rules?.ccf?.regex, ['A', 'B', 'C']);
+    if (r) return { ccfTier: r.tier, ccfMatchedBy: r.matchedBy };
+  }
+
   for (const groupName of ['conference', 'journal']) {
     const group = (ccf.venues || {})[groupName] || {};
     for (const tier of ['A', 'B', 'C']) {
@@ -79,10 +147,10 @@ function resolveCcfTier(item, ccf = {}) {
   return { ccfTier: 'NA', ccfMatchedBy: null };
 }
 
-function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cfg = {}) {
+function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cfg = {}, rules = {}) {
   const t = String(text || '').toLowerCase();
   let s = 0;
-  const mergedVenueKeywords = [...(venueKeywords || []), ...getVenueKeywords(cfg)];
+  const mergedVenueKeywords = [...(venueKeywords || []), ...getVenueKeywords(cfg, rules)];
   for (const kw of keywords) if (t.includes(String(kw).toLowerCase())) s += 1;
   for (const kw of mergedVenueKeywords) if (t.includes(String(kw).toLowerCase())) s += 2;
   for (const kw of excludeKeywords) if (t.includes(String(kw).toLowerCase())) s -= 2;
@@ -92,6 +160,7 @@ function score(text, keywords = [], venueKeywords = [], excludeKeywords = [], cf
 async function main() {
   const cfg = loadConfig();
   const ccfCfg = loadCcfConfig();
+  const rules = loadVenueRules();
   if (!cfg.enabled) {
     console.log('Auto fetch disabled by config.');
     return;
@@ -108,10 +177,10 @@ async function main() {
 
     for (const item of items) {
       const text = [item.title, item.summary, item.journalRef, item.comment].join(' ');
-      const relevance = score(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || [], cfg);
+      const relevance = score(text, topic.keywords || [], cfg.venueKeywords || [], cfg.excludeKeywords || [], cfg, rules);
       const inCategory = (topic.categories || []).length === 0 || (item.categories || []).some((c) => topic.categories.includes(c));
-      const venue = resolveVenueTier(item, cfg);
-      const ccf = resolveCcfTier(item, ccfCfg);
+      const venue = resolveVenueTier(item, cfg, rules);
+      const ccf = resolveCcfTier(item, ccfCfg, rules);
       if (relevance < (cfg.minRelevanceScore || 2) || !inCategory) continue;
 
       const exists = await prisma.paper.findFirst({
