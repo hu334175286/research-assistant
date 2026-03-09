@@ -12,10 +12,26 @@ function parseYear(value) {
   return Math.floor(n);
 }
 
+function parsePositiveInt(value, fallback, max = Number.MAX_SAFE_INTEGER) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.floor(n), max);
+}
+
 function parseTake(searchParams, fallback = 50) {
-  const raw = Number(searchParams.get('take') || searchParams.get('limit') || fallback);
-  if (!Number.isFinite(raw) || raw <= 0) return fallback;
-  return Math.min(Math.floor(raw), 500);
+  return parsePositiveInt(searchParams.get('take') || searchParams.get('limit') || fallback, fallback, 500);
+}
+
+function parsePage(searchParams, fallback = 1) {
+  return parsePositiveInt(searchParams.get('page') || fallback, fallback);
+}
+
+function parsePageSize(searchParams, fallback = 20) {
+  return parsePositiveInt(
+    searchParams.get('pageSize') || searchParams.get('perPage') || searchParams.get('per_page') || fallback,
+    fallback,
+    200,
+  );
 }
 
 function hasFilter(searchParams, keys) {
@@ -34,11 +50,14 @@ export async function GET(req) {
   const sourceRequested = String(searchParams.get('source') || searchParams.get('src') || '').trim();
   const yearFromRequested = parseYear(searchParams.get('yearFrom') ?? searchParams.get('fromYear') ?? searchParams.get('startYear'));
   const yearToRequested = parseYear(searchParams.get('yearTo') ?? searchParams.get('toYear') ?? searchParams.get('endYear'));
+  const page = parsePage(searchParams, 1);
+  const pageSize = parsePageSize(searchParams, parseTake(searchParams, 20));
 
   const qualityFilter = QUALITY_OPTIONS.includes(qualityRequested) ? qualityRequested : 'all';
   const ccfFilter = CCF_OPTIONS.includes(ccfRequested) ? ccfRequested : 'all';
   const sourceFilter = sourceRequested || 'all';
 
+  const hasPaginationParams = hasFilter(searchParams, ['page', 'pageSize', 'perPage', 'per_page']);
   const hasAdvancedFilter =
     includeMeta ||
     hasFilter(searchParams, [
@@ -55,6 +74,10 @@ export async function GET(req) {
       'endYear',
       'take',
       'limit',
+      'page',
+      'pageSize',
+      'perPage',
+      'per_page',
     ]);
 
   // Backward-compatible default behavior.
@@ -62,9 +85,6 @@ export async function GET(req) {
     const items = await prisma.paper.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
     return Response.json(items);
   }
-
-  const requestedTake = parseTake(searchParams, 50);
-  const dbTake = Math.min(Math.max(requestedTake * 3, 200), 1000);
 
   const where = {};
   if (sourceFilter !== 'all') where.source = sourceFilter;
@@ -77,7 +97,7 @@ export async function GET(req) {
   const baseItems = await prisma.paper.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    take: dbTake,
+    take: 3000,
   });
 
   const enriched = baseItems.map((paper) => {
@@ -96,30 +116,35 @@ export async function GET(req) {
     return qualityOk && ccfOk;
   });
 
-  const items = filtered.slice(0, requestedTake);
+  const total = filtered.length;
+  const start = (page - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+  const hasMore = start + items.length < total;
   const sourceOptions = ['all', ...new Set(baseItems.map((p) => String(p.source || '').trim()).filter(Boolean))];
 
-  if (includeMeta) {
-    return Response.json({
-      items,
-      meta: {
-        requested: {
-          quality: qualityFilter,
-          ccfTier: ccfFilter,
-          source: sourceFilter,
-          yearFrom: yearFromRequested,
-          yearTo: yearToRequested,
-          take: requestedTake,
-        },
-        scanned: baseItems.length,
-        matchedBeforeTake: filtered.length,
-        returned: items.length,
-        sourceOptions,
-      },
-    });
+  if (!includeMeta && !hasPaginationParams) {
+    return Response.json(items);
   }
 
-  return Response.json(items);
+  return Response.json({
+    items,
+    meta: {
+      total,
+      hasMore,
+      page,
+      pageSize,
+      requested: {
+        quality: qualityFilter,
+        ccfTier: ccfFilter,
+        source: sourceFilter,
+        yearFrom: yearFromRequested,
+        yearTo: yearToRequested,
+      },
+      scanned: baseItems.length,
+      returned: items.length,
+      sourceOptions,
+    },
+  });
 }
 
 export async function POST(req) {

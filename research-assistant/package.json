@@ -19,11 +19,13 @@
     "check:ccf": "node scripts/check-ccf-coverage.js",
     "check:venue-rules": "node scripts/test-venue-rules-v2.mjs",
     "check:reports": "node scripts/check-daily-report-view.mjs",
+    "check:experiments-api": "node scripts/check-experiments-api.js",
     "quick:open": "node scripts/open-quick.js",
     "verify": "npm run build && npm run smoke",
     "auto:cycle": "node scripts/dev-auto-cycle.js",
     "seed:real": "node scripts/seed-real-content.js",
-    "seed:demo": "node scripts/seed-demo-data.js"
+    "seed:demo": "node scripts/seed-demo-data.js",
+    "check:deliverable": "node scripts/check-deliverable.js"
   },
   "dependencies": {
     "@prisma/client": "6.5.0",
