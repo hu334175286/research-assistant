@@ -1,51 +1,47 @@
 {
-  "version": "v2",
+  "version": "v3",
+  "comment": "Updated: remove expired API keys, use available models only",
   "routes": {
     "code_execution": {
-      "primary": "openai-codex/gpt-5.3-codex",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "qwen-portal/coder-model",
-        "moonshot/kimi-k2.5"
+        "openrouter/auto"
       ]
     },
     "literature_gap": {
-      "primary": "qwen-portal/coder-model",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "moonshot/kimi-k2.5",
         "openrouter/deepseek/deepseek-r1"
       ]
     },
     "daily_weekly": {
-      "primary": "qwen-portal/coder-model",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "openrouter/deepseek/deepseek-chat",
-        "moonshot/kimi-k2.5"
+        "openrouter/deepseek/deepseek-chat"
       ]
     },
     "paper_writing": {
       "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "qwen-portal/coder-model",
         "openrouter/deepseek/deepseek-r1"
       ]
     },
     "paper_screening": {
-      "primary": "qwen-portal/coder-model",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "moonshot/kimi-k2.5"
+        "openrouter/auto"
       ]
     },
     "figure_understanding": {
-      "primary": "qwen-portal/vision-model",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "qwen-portal/coder-model",
-        "moonshot/kimi-k2.5"
+        "openrouter/auto"
       ]
     },
     "quick_iter": {
-      "primary": "qwen-portal/coder-model",
+      "primary": "moonshot/kimi-k2.5",
       "fallbacks": [
-        "openai-codex/gpt-5.3-codex"
+        "openrouter/auto"
       ]
     }
   },

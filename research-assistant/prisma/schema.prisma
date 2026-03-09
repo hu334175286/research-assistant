@@ -18,23 +18,44 @@ model Paper {
   venueMatchedBy String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  
+  experiments   Experiment[] // 基于该文献的实验
 }
 
 model Experiment {
   id                     String   @id @default(cuid())
   name                   String
+  status                 String   @default("draft") // draft, running, completed, failed, archived
   hypothesis             String?
-  configJson             String?
-  metricsJson            String?
+  configJson             String?  // 实验配置快照（超参、随机种子等）
+  metricsJson            String?  // 关键指标结果
+  logsJson               String?  // 运行日志/中间结果
   conclusion             String?
+  tags                   String?  // 标签，逗号分隔
+  
+  // 关联文献（基于哪篇论文的idea）
+  sourcePaperId          String?
+  sourcePaper            Paper?   @relation(fields: [sourcePaperId], references: [id], onDelete: SetNull)
+  
+  // 数据集关联
   datasetId              String?
-  datasetVersionSnapshot String?
+  dataset                Dataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  datasetVersionSnapshot String?  // 数据集版本快照
+  
+  // 代码/环境快照
+  codeSnapshot           String?  // 代码版本（git commit/hash）
+  environment            String?  // 环境信息（Python版本、关键包版本）
+  
+  // 时间戳
+  startedAt              DateTime?
+  completedAt            DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  dataset Dataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
-
   @@index([datasetId])
+  @@index([sourcePaperId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Dataset {
