@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node src/index.js",
     "fetch": "node src/fetchers/papers.js",
-    "report": "node src/reporters/progress.js"
+    "report": "node src/reporters/progress.js",
+    "test:venue": "node scripts/test-venue-matcher.js",
+    "filter": "node src/utils/paperFilter.js",
+    "filter:top": "node src/utils/paperFilter.js --top-only",
+    "filter:high": "node src/utils/paperFilter.js --high-only"
   },
   "keywords": ["research", "IoT", "perception", "papers"],
   "author": "",

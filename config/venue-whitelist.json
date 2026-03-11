@@ -1,6 +1,7 @@
 {
   "description": "智能物联感知与处理领域顶刊顶会白名单",
-  "lastUpdated": "2026-03-11",
+  "version": "1.1.0",
+  "lastUpdated": "2026-03-12",
   "categories": {
     "topJournals": {
       "name": "顶级期刊",
@@ -271,6 +272,32 @@
           "keywords": ["ipccc", "performance computing"]
         }
       ]
+    }
+  },
+  "tierDefinitions": {
+    "1": {
+      "label": "顶级 (Top Tier)",
+      "description": "领域内公认的顶级期刊和会议，CCF A类或同等水平",
+      "color": "#d4af37",
+      "score": 100
+    },
+    "2": {
+      "label": "优秀 (Tier 2)",
+      "description": "高质量期刊和会议，CCF B类或同等水平",
+      "color": "#c0c0c0",
+      "score": 80
+    },
+    "3": {
+      "label": "良好 (Tier 3)",
+      "description": "有一定影响力的期刊和会议，CCF C类",
+      "color": "#cd7f32",
+      "score": 60
+    },
+    "0": {
+      "label": "其他 (Other)",
+      "description": "未在白名单中或新出现的期刊/会议",
+      "color": "#808080",
+      "score": 40
     }
   },
   "researchKeywords": [

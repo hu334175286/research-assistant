@@ -174,7 +174,8 @@ class PaperFetcher {
     const {
       minTier = 0,        // 最低等级要求
       requireRelevant = false,  // 是否要求相关
-      topN = null         // 只返回前N篇
+      topN = null,        // 只返回前N篇
+      includeArXivOnly = true  // 是否包含仅arXiv的论文
     } = options;
 
     console.log(`[PaperFetcher] 开始评估 ${papers.length} 篇论文...`);
@@ -185,14 +186,22 @@ class PaperFetcher {
       venue: p.primaryCategory || 'arXiv',
       abstract: p.summary,
       authors: p.authors,
+      comments: p.comments,  // arXiv的journal-ref信息
       ...p
     })));
 
     // 过滤
     let filtered = evaluated.filter(item => {
-      if (minTier > 0 && (!item.venueInfo || item.venueInfo.tier < minTier)) {
-        return false;
+      // 检查等级要求
+      if (minTier > 0) {
+        if (!item.venueInfo || item.venueInfo.tier < minTier) {
+          // 如果设置了includeArXivOnly，高相关性的arXiv论文也可以保留
+          if (!includeArXivOnly || !item.relevance.isHighlyRelevant) {
+            return false;
+          }
+        }
       }
+      // 检查相关性要求
       if (requireRelevant && !item.relevance.relevant) {
         return false;
       }
@@ -205,6 +214,18 @@ class PaperFetcher {
     }
 
     console.log(`[PaperFetcher] 过滤后剩余 ${filtered.length} 篇论文`);
+    
+    // 输出统计信息
+    const tierCounts = { 1: 0, 2: 0, 0: 0 };
+    const priorityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0, NONE: 0 };
+    for (const item of filtered) {
+      const tier = item.venueInfo?.tier || 0;
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+      priorityCounts[item.priority] = (priorityCounts[item.priority] || 0) + 1;
+    }
+    console.log(`[PaperFetcher] 等级分布: 顶级=${tierCounts[1]}, 二区=${tierCounts[2]}, 其他=${tierCounts[0]}`);
+    console.log(`[PaperFetcher] 优先级分布: 高=${priorityCounts.HIGH}, 中=${priorityCounts.MEDIUM}, 低=${priorityCounts.LOW}`);
+    
     return filtered;
   }
 

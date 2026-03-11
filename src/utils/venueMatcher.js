@@ -133,14 +133,72 @@ class VenueMatcher {
     const match = this.match(venueName);
     if (!match) return null;
 
+    const tierDef = this.whitelist?.tierDefinitions?.[match.tier.toString()] || {
+      label: '未知',
+      description: '未定义等级',
+      color: '#808080',
+      score: 40
+    };
+
     return {
       name: match.name,
       abbreviation: match.abbreviation,
       publisher: match.publisher,
       category: match.category,
       tier: match.tier,
+      tierLabel: tierDef.label,
+      tierScore: tierDef.score,
+      tierColor: tierDef.color,
       isTop: match.tier === 1
     };
+  }
+
+  /**
+   * 从文本中提取venue名称并匹配
+   * @param {string} text - 包含venue信息的文本（如arXiv注释）
+   * @returns {Object|null} 匹配结果
+   */
+  extractAndMatch(text) {
+    if (!text) return null;
+    
+    const normalizedText = text.toLowerCase();
+    
+    // 尝试直接匹配
+    let match = this.match(normalizedText);
+    if (match) return { ...match, matchType: 'direct', extractionSource: text };
+    
+    // 尝试提取常见模式
+    // 模式1: "Proc. IEEE INFOCOM 2005" -> "infocom"
+    // 模式2: "IEEE International Conference on Computer Communications (INFOCOM)"
+    // 模式3: "presented at MobiCom 2024"
+    
+    const patterns = [
+      // 会议缩写提取 (如 INFOCOM, MobiCom, SenSys)
+      /\b(sensys|ipsn|infocom|mobisys|mobicom|nsdi|sigcomm|secon|dcoss|ithings|wf-iot|ccs|ndss|oakland|sp|globecom|icc|vtc|percom|ipccc)\b/gi,
+      // 期刊缩写提取
+      /\b(iot-j|tmc|tpds|ton|tosn|twc|tcom|comst|csur|tii|tsg|compnet|adhoc|jnca|sensors-j|ijdsn|wcmc)\b/gi,
+      // 完整名称关键词
+      /(internet of things journal|mobile computing|sensor networks|computer communications|networking)/gi
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = normalizedText.match(pattern);
+      if (matches) {
+        for (const m of matches) {
+          const venueMatch = this.match(m);
+          if (venueMatch) {
+            return { 
+              ...venueMatch, 
+              matchType: 'extracted',
+              extractionSource: text,
+              extractedVenue: m
+            };
+          }
+        }
+      }
+    }
+    
+    return null;
   }
 
   /**
@@ -180,17 +238,33 @@ class VenueMatcher {
    * @returns {Object} 评估结果
    */
   evaluatePaper(paper) {
-    const { title, venue, abstract, authors } = paper;
+    const { title, venue, abstract, authors, comments } = paper;
     
-    const venueInfo = this.getVenueInfo(venue);
+    // 优先从comments/journal-ref中提取venue信息（arXiv常见）
+    let venueInfo = null;
+    let matchSource = 'venue';
+    
+    if (comments) {
+      const extracted = this.extractAndMatch(comments);
+      if (extracted) {
+        venueInfo = this.getVenueInfo(extracted.name);
+        matchSource = 'comments';
+      }
+    }
+    
+    // 如果没有从comments匹配到，使用原始venue
+    if (!venueInfo && venue) {
+      venueInfo = this.getVenueInfo(venue);
+    }
+    
     const relevance = this.checkRelevance(title, abstract);
     
     // 综合质量分数 (0-100)
     let qualityScore = 0;
     if (venueInfo) {
-      qualityScore += venueInfo.tier === 1 ? 50 : 30;
+      qualityScore += venueInfo.tierScore * 0.5; // venue等级占50%
     }
-    qualityScore += relevance.score * 50;
+    qualityScore += relevance.score * 50; // 相关性占50%
 
     return {
       paper,
@@ -198,7 +272,8 @@ class VenueMatcher {
       relevance,
       qualityScore: Math.round(qualityScore),
       priority: this.calculatePriority(venueInfo, relevance),
-      recommendation: this.generateRecommendation(qualityScore, relevance)
+      recommendation: this.generateRecommendation(qualityScore, relevance),
+      matchSource
     };
   }
 

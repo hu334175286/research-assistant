@@ -101,12 +101,16 @@ class ProgressReporter {
         authors: (p.paper?.authors || p.authors || []).slice(0, 3).join(', ') + 
                  ((p.paper?.authors || p.authors || []).length > 3 ? ' et al.' : ''),
         venue: p.venueInfo?.name || p.paper?.venue || 'Unknown',
+        venueAbbreviation: p.venueInfo?.abbreviation || '',
         venueTier: p.venueInfo?.tier || 0,
+        venueTierLabel: p.venueInfo?.tierLabel || '',
+        venueTierScore: p.venueInfo?.tierScore || 0,
         priority: p.priority,
         qualityScore: p.qualityScore,
         recommendation: p.recommendation,
         link: p.paper?.link || p.link,
         matchedKeywords: p.relevance?.matchedKeywords?.slice(0, 5) || [],
+        relevanceScore: p.relevance?.score || 0,
         published: p.paper?.published
       }));
     }
@@ -120,8 +124,10 @@ class ProgressReporter {
         LOW: papers.filter(p => p.priority === 'LOW').length,
         NONE: papers.filter(p => p.priority === 'NONE').length
       },
+      byTier: this.countByTier(papers),
       bySource: this.countBySource(papers),
-      topVenues: this.countTopVenues(papers)
+      topVenues: this.countTopVenues(papers),
+      venueDistribution: this.getVenueDistribution(papers)
     };
 
     // 4. 最近活动
@@ -140,6 +146,55 @@ class ProgressReporter {
       counts[source] = (counts[source] || 0) + 1;
     }
     return counts;
+  }
+
+  /**
+   * 按等级统计
+   */
+  countByTier(papers) {
+    const counts = { 1: 0, 2: 0, 0: 0 };
+    for (const paper of papers) {
+      const tier = paper.venueInfo?.tier || 0;
+      counts[tier] = (counts[tier] || 0) + 1;
+    }
+    return {
+      topTier: counts[1],
+      tier2: counts[2],
+      other: counts[0]
+    };
+  }
+
+  /**
+   * 获取Venue分布详情
+   */
+  getVenueDistribution(papers) {
+    const distribution = {};
+    for (const paper of papers) {
+      if (paper.venueInfo && paper.venueInfo.tier === 1) {
+        const key = paper.venueInfo.abbreviation || paper.venueInfo.name;
+        if (!distribution[key]) {
+          distribution[key] = {
+            name: paper.venueInfo.name,
+            abbreviation: paper.venueInfo.abbreviation,
+            count: 0,
+            papers: []
+          };
+        }
+        distribution[key].count++;
+        if (distribution[key].papers.length < 3) {
+          distribution[key].papers.push({
+            title: paper.paper?.title || paper.title,
+            priority: paper.priority
+          });
+        }
+      }
+    }
+    return Object.entries(distribution)
+      .sort((a, b) => b[1].count - a[1].count)
+      .reduce((obj, [key, value]) => {
+        obj[key] = value;
+        return obj;
+      }, {});
   }
 
   /**
@@ -221,6 +276,14 @@ class ProgressReporter {
         lines.push(`  研究方向关键词: ${vs.researchKeywords} 个`);
       }
       lines.push('');
+
+      if (report.statistics.byTier) {
+        lines.push('  论文等级分布:');
+        lines.push(`    ⭐ 顶级 (Tier 1): ${report.statistics.byTier.topTier} 篇`);
+        lines.push(`    🥈 二区 (Tier 2): ${report.statistics.byTier.tier2} 篇`);
+        lines.push(`    📄 其他: ${report.statistics.byTier.other} 篇`);
+        lines.push('');
+      }
 
       if (report.statistics.topVenues.length > 0) {
         lines.push('  热门顶刊顶会:');
