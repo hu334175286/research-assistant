@@ -1,0 +1,23 @@
+{
+  "description": "OpenClaw Cron Jobs for Research Assistant",
+  "version": "1.0.0",
+  "jobs": [
+    {
+      "name": "research-assistant-hourly-fetch",
+      "description": "整点/半点自动抓取论文并生成报告",
+      "schedule": "0,30 * * * *",
+      "timezone": "Asia/Shanghai",
+      "enabled": true,
+      "command": "npm run scheduler:once",
+      "workingDirectory": "C:\\hux_config\\research-assistant",
+      "environment": {
+        "NODE_ENV": "production"
+      },
+      "notifications": {
+        "onSuccess": true,
+        "onFailure": true,
+        "summaryOnly": true
+      }
+    }
+  ]
+}

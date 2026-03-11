@@ -10,7 +10,10 @@
     "test:venue": "node scripts/test-venue-matcher.js",
     "filter": "node src/utils/paperFilter.js",
     "filter:top": "node src/utils/paperFilter.js --top-only",
-    "filter:high": "node src/utils/paperFilter.js --high-only"
+    "filter:high": "node src/utils/paperFilter.js --high-only",
+    "scheduler:start": "node src/scheduler/index.js start",
+    "scheduler:once": "node src/scheduler/index.js once",
+    "scheduler:status": "node src/scheduler/index.js status"
   },
   "keywords": ["research", "IoT", "perception", "papers"],
   "author": "",
