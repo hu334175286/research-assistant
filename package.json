@@ -1,0 +1,19 @@
+{
+  "name": "research-assistant",
+  "version": "1.0.0",
+  "description": "智能物联感知与处理 - 个人研究门户",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "fetch": "node src/fetchers/papers.js",
+    "report": "node src/reporters/progress.js"
+  },
+  "keywords": ["research", "IoT", "perception", "papers"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "node-cron": "^3.0.3"
+  }
+}

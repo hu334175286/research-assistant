@@ -1,0 +1,351 @@
+{
+  "description": "智能物联感知与处理领域顶刊顶会白名单",
+  "lastUpdated": "2026-03-11",
+  "categories": {
+    "topJournals": {
+      "name": "顶级期刊",
+      "tier": 1,
+      "venues": [
+        {
+          "name": "IEEE Internet of Things Journal",
+          "abbreviation": "IoT-J",
+          "publisher": "IEEE",
+          "keywords": ["internet of things", "iot journal"]
+        },
+        {
+          "name": "IEEE Transactions on Mobile Computing",
+          "abbreviation": "TMC",
+          "publisher": "IEEE",
+          "keywords": ["mobile computing", "transactions on mobile"]
+        },
+        {
+          "name": "IEEE Transactions on Parallel and Distributed Systems",
+          "abbreviation": "TPDS",
+          "publisher": "IEEE",
+          "keywords": ["parallel", "distributed systems"]
+        },
+        {
+          "name": "IEEE/ACM Transactions on Networking",
+          "abbreviation": "ToN",
+          "publisher": "IEEE/ACM",
+          "keywords": ["networking", "transactions on networking"]
+        },
+        {
+          "name": "ACM Transactions on Sensor Networks",
+          "abbreviation": "TOSN",
+          "publisher": "ACM",
+          "keywords": ["sensor networks", "tosn"]
+        },
+        {
+          "name": "IEEE Transactions on Wireless Communications",
+          "abbreviation": "TWC",
+          "publisher": "IEEE",
+          "keywords": ["wireless communications"]
+        },
+        {
+          "name": "IEEE Transactions on Communications",
+          "abbreviation": "TCOM",
+          "publisher": "IEEE",
+          "keywords": ["communications"]
+        },
+        {
+          "name": "Proceedings of the IEEE",
+          "abbreviation": "Proc. IEEE",
+          "publisher": "IEEE",
+          "keywords": ["proceedings of the ieee"]
+        },
+        {
+          "name": "IEEE Communications Surveys & Tutorials",
+          "abbreviation": "ComST",
+          "publisher": "IEEE",
+          "keywords": ["communications surveys", "tutorials"]
+        },
+        {
+          "name": "ACM Computing Surveys",
+          "abbreviation": "CSUR",
+          "publisher": "ACM",
+          "keywords": ["computing surveys"]
+        },
+        {
+          "name": "IEEE Transactions on Industrial Informatics",
+          "abbreviation": "TII",
+          "publisher": "IEEE",
+          "keywords": ["industrial informatics"]
+        },
+        {
+          "name": "IEEE Transactions on Smart Grid",
+          "abbreviation": "TSG",
+          "publisher": "IEEE",
+          "keywords": ["smart grid"]
+        },
+        {
+          "name": "Computer Networks",
+          "abbreviation": "CompNet",
+          "publisher": "Elsevier",
+          "keywords": ["computer networks"]
+        },
+        {
+          "name": "Ad Hoc Networks",
+          "abbreviation": "AdHoc",
+          "publisher": "Elsevier",
+          "keywords": ["ad hoc networks"]
+        },
+        {
+          "name": "Journal of Network and Computer Applications",
+          "abbreviation": "JNCA",
+          "publisher": "Elsevier",
+          "keywords": ["network and computer applications"]
+        }
+      ]
+    },
+    "topConferences": {
+      "name": "顶级会议",
+      "tier": 1,
+      "venues": [
+        {
+          "name": "ACM Conference on Embedded Networked Sensor Systems",
+          "abbreviation": "SenSys",
+          "publisher": "ACM",
+          "keywords": ["sensys", "embedded networked sensor"]
+        },
+        {
+          "name": "ACM/IEEE International Conference on Information Processing in Sensor Networks",
+          "abbreviation": "IPSN",
+          "publisher": "ACM/IEEE",
+          "keywords": ["ipsn", "information processing sensor"]
+        },
+        {
+          "name": "IEEE International Conference on Computer Communications",
+          "abbreviation": "INFOCOM",
+          "publisher": "IEEE",
+          "keywords": ["infocom", "computer communications"]
+        },
+        {
+          "name": "ACM International Conference on Mobile Systems, Applications, and Services",
+          "abbreviation": "MobiSys",
+          "publisher": "ACM",
+          "keywords": ["mobisys", "mobile systems"]
+        },
+        {
+          "name": "ACM International Conference on Mobile Computing and Networking",
+          "abbreviation": "MobiCom",
+          "publisher": "ACM",
+          "keywords": ["mobicom", "mobile computing"]
+        },
+        {
+          "name": "USENIX Symposium on Networked Systems Design and Implementation",
+          "abbreviation": "NSDI",
+          "publisher": "USENIX",
+          "keywords": ["nsdi", "networked systems"]
+        },
+        {
+          "name": "ACM SIGCOMM Conference",
+          "abbreviation": "SIGCOMM",
+          "publisher": "ACM",
+          "keywords": ["sigcomm"]
+        },
+        {
+          "name": "IEEE Conference on Computer Communications",
+          "abbreviation": "INFOCOM",
+          "publisher": "IEEE",
+          "keywords": ["infocom"]
+        },
+        {
+          "name": "IEEE International Conference on Sensing, Communication, and Networking",
+          "abbreviation": "SECON",
+          "publisher": "IEEE",
+          "keywords": ["secon", "sensing communication networking"]
+        },
+        {
+          "name": "IEEE International Conference on Distributed Computing in Sensor Systems",
+          "abbreviation": "DCOSS",
+          "publisher": "IEEE",
+          "keywords": ["dcoss", "distributed computing sensor"]
+        },
+        {
+          "name": "IEEE International Conference on Internet of Things",
+          "abbreviation": "iThings",
+          "publisher": "IEEE",
+          "keywords": ["ithings", "internet of things"]
+        },
+        {
+          "name": "IEEE World Forum on Internet of Things",
+          "abbreviation": "WF-IoT",
+          "publisher": "IEEE",
+          "keywords": ["wf-iot", "world forum"]
+        },
+        {
+          "name": "ACM Conference on Computer and Communications Security",
+          "abbreviation": "CCS",
+          "publisher": "ACM",
+          "keywords": ["ccs", "computer communications security"]
+        },
+        {
+          "name": "IEEE Symposium on Security and Privacy",
+          "abbreviation": "S&P",
+          "publisher": "IEEE",
+          "keywords": ["security and privacy", "oakland"]
+        },
+        {
+          "name": "Network and Distributed System Security Symposium",
+          "abbreviation": "NDSS",
+          "publisher": "Internet Society",
+          "keywords": ["ndss", "network distributed security"]
+        }
+      ]
+    },
+    "tier2Journals": {
+      "name": "二区期刊",
+      "tier": 2,
+      "venues": [
+        {
+          "name": "IEEE Sensors Journal",
+          "abbreviation": "Sensors-J",
+          "publisher": "IEEE",
+          "keywords": ["sensors journal"]
+        },
+        {
+          "name": "IEEE Access",
+          "abbreviation": "Access",
+          "publisher": "IEEE",
+          "keywords": ["ieee access"]
+        },
+        {
+          "name": "Sensors",
+          "abbreviation": "Sensors",
+          "publisher": "MDPI",
+          "keywords": ["sensors mdpi"]
+        },
+        {
+          "name": "Electronics",
+          "abbreviation": "Electronics",
+          "publisher": "MDPI",
+          "keywords": ["electronics mdpi"]
+        },
+        {
+          "name": "Wireless Communications and Mobile Computing",
+          "abbreviation": "WCMC",
+          "publisher": "Hindawi",
+          "keywords": ["wireless communications mobile"]
+        },
+        {
+          "name": "International Journal of Distributed Sensor Networks",
+          "abbreviation": "IJDSN",
+          "publisher": "SAGE",
+          "keywords": ["distributed sensor networks"]
+        }
+      ]
+    },
+    "tier2Conferences": {
+      "name": "二区会议",
+      "tier": 2,
+      "venues": [
+        {
+          "name": "IEEE International Conference on Communications",
+          "abbreviation": "ICC",
+          "publisher": "IEEE",
+          "keywords": ["icc", "international conference communications"]
+        },
+        {
+          "name": "IEEE Global Communications Conference",
+          "abbreviation": "GLOBECOM",
+          "publisher": "IEEE",
+          "keywords": ["globecom", "global communications"]
+        },
+        {
+          "name": "IEEE Vehicular Technology Conference",
+          "abbreviation": "VTC",
+          "publisher": "IEEE",
+          "keywords": ["vtc", "vehicular technology"]
+        },
+        {
+          "name": "IEEE International Conference on Pervasive Computing and Communications",
+          "abbreviation": "PerCom",
+          "publisher": "IEEE",
+          "keywords": ["percom", "pervasive computing"]
+        },
+        {
+          "name": "IEEE International Performance Computing and Communications Conference",
+          "abbreviation": "IPCCC",
+          "publisher": "IEEE",
+          "keywords": ["ipccc", "performance computing"]
+        }
+      ]
+    }
+  },
+  "researchKeywords": [
+    "internet of things",
+    "iot",
+    "sensor network",
+    "wireless sensor",
+    "edge computing",
+    "fog computing",
+    "pervasive computing",
+    "ubiquitous computing",
+    "smart sensing",
+    "industrial iot",
+    "iiot",
+    "cyber-physical system",
+    "cps",
+    "smart city",
+    "smart home",
+    "wearable",
+    "rfid",
+    "localization",
+    "tracking",
+    "context-aware",
+    "activity recognition",
+    "mobile sensing",
+    "crowdsensing",
+    "participatory sensing",
+    "data fusion",
+    "sensor fusion",
+    "signal processing",
+    "compressive sensing",
+    "sparse representation",
+    "machine learning",
+    "deep learning",
+    "federated learning",
+    "distributed learning",
+    "reinforcement learning",
+    "anomaly detection",
+    "fault detection",
+    "time series",
+    "stream processing",
+    "real-time",
+    "low power",
+    "energy harvesting",
+    "duty cycling",
+    "wake-up radio",
+    "backscatter",
+    "visible light communication",
+    "vlc",
+    "lora",
+    "loraWAN",
+    "nb-iot",
+    "5g",
+    "6g",
+    "wireless communication",
+    "protocol",
+    "routing",
+    "mac protocol",
+    "tdma",
+    "csma",
+    "scheduling",
+    "resource allocation",
+    "qos",
+    "quality of service",
+    "security",
+    "privacy",
+    "authentication",
+    "encryption",
+    "blockchain",
+    "trust management",
+    "intrusion detection",
+    "digital twin",
+    "metaverse",
+    "digitalization",
+    "industry 4.0",
+    "industry 5.0"
+  ]
+}

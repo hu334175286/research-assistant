@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>最新论文筛选报告</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+      margin-bottom: 30px;
+      border-radius: 10px;
+    }
+    h1 { font-size: 2em; margin-bottom: 10px; }
+    .subtitle { opacity: 0.9; }
+    
+    /* 统计面板 */
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-label { color: #666; font-size: 0.9em; }
+    
+    /* 筛选标签 */
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-tab {
+      padding: 10px 20px;
+      border: none;
+      background: white;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+    .filter-tab:hover { background: #e0e0e0; }
+    .filter-tab.active { background: #667eea; color: white; }
+    .filter-tab .count { font-weight: bold; margin-left: 5px; }
+    
+    /* 论文卡片 */
+    .papers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    .paper-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 4px solid #ddd;
+    }
+    .paper-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    .paper-card.tier-A { border-left-color: #d4af37; }
+    .paper-card.tier-B { border-left-color: #c0c0c0; }
+    .paper-card.tier-C { border-left-color: #cd7f32; }
+    
+    .paper-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .paper-index { color: #999; font-size: 0.9em; }
+    .tier-badge {
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 0.75em;
+      color: white;
+      font-weight: bold;
+    }
+    .quality-score {
+      margin-left: auto;
+      background: #f0f0f0;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 0.85em;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .paper-title {
+      font-size: 1.1em;
+      margin-bottom: 10px;
+      color: #333;
+      line-height: 1.4;
+    }
+    .paper-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .paper-authors {
+      font-size: 0.85em;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .author { margin-right: 8px; }
+    .paper-abstract {
+      font-size: 0.9em;
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 15px;
+    }
+    .paper-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 15px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 0.85em;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #5568d3; }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #5a6268; }
+    
+    /* 分层标题 */
+    .tier-section {
+      margin-bottom: 30px;
+    }
+    .tier-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #eee;
+    }
+    .tier-title h2 { font-size: 1.3em; }
+    .tier-count {
+      background: #667eea;
+      color: white;
+      padding: 2px 10px;
+      border-radius: 15px;
+      font-size: 0.8em;
+    }
+    
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #999;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📚 最新论文筛选报告</h1>
+      <p class="subtitle">生成时间: 2026/3/11 20:09:51</p>
+    </header>
+    
+    
+    <div class="stats-panel">
+      <div class="stat-card">
+        <div class="stat-value">30</div>
+        <div class="stat-label">总论文数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #d4af37">1</div>
+        <div class="stat-label">A类顶刊/顶会</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: #c0c0c0">0</div>
+        <div class="stat-label">B类优秀</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">arXiv Preprint...</div>
+        <div class="stat-label">热门Venue</div>
+      </div>
+    </div>
+    
+    
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="showAll()">全部 <span class="count">30</span></button>
+      <button class="filter-tab" onclick="showTier('A')">🏆 A类 <span class="count">1</span></button>
+      <button class="filter-tab" onclick="showTier('B')">🥈 B类 <span class="count">0</span></button>
+      <button class="filter-tab" onclick="showTier('C')">🥉 C类 <span class="count">0</span></button>
+      <button class="filter-tab" onclick="showTier('other')">📄 其他 <span class="count">29</span></button>
+    </div>
+    
+    <div id="papers-container">
+      
+      <div class="tier-section" data-tier="A">
+        <div class="tier-title">
+          <h2>🏆 A类 - 顶级顶刊顶会</h2>
+          <span class="tier-count">1</span>
+        </div>
+        <div class="papers-grid">
+          
+    <div class="paper-card tier-A">
+      <div class="paper-header">
+        <span class="paper-index">#1</span>
+        <span class="tier-badge" style="background-color: #d4af37">
+          顶级
+        </span>
+        <span class="quality-score" title="质量得分: 基础100 + 奖励25">
+          120分
+        </span>
+      </div>
+      <h3 class="paper-title">The 802.11 MAC protocol leads to inefficient equilibria</h3>
+      <div class="paper-meta">
+        <span class="venue">Proc. IEEE INFOCOM 2005, Vol. 1, pp. 1-11. Miami, FL (2005)</span>
+        <span class="type">📊 会议</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Godfrey Tan</span>, <span class="author">John Guttag</span>
+      </div>
+      <p class="paper-abstract">Wireless local area networks (WLANs) based on the family of 802.11 technologies are becoming ubiquitous. These technologies support multiple data transmission rates. Transmitting at a lower data rate (by using a more resilient modulation scheme) increases the frame transmission time but reduces the ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09902v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09902v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+        </div>
+      </div>
+      
+      
+      
+      
+      
+      
+      
+      <div class="tier-section" data-tier="other">
+        <div class="tier-title">
+          <h2>📄 其他</h2>
+          <span class="tier-count">29</span>
+        </div>
+        <div class="papers-grid">
+          
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#1</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Understanding the Use of a Large Language Model-Powered Guide to Make Virtual Reality Accessible for Blind and Low Vision People</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Jazmin Collins</span>, <span class="author">Sharon Y Lin</span>, <span class="author">Tianqi Liu</span>, <span class="author">Andrea Stevenson Won</span>, <span class="author">Shiri Azenkot</span>
+      </div>
+      <p class="paper-abstract">As social virtual reality (VR) grows more popular, addressing accessibility for blind and low vision (BLV) users is increasingly critical. Researchers have proposed an AI &quot;sighted guide&quot; to help users navigate VR and answer their questions, but it has not been studied with users. To address this gap...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09964v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09964v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#2</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Towards Flexible Spectrum Access: Data-Driven Insights into Spectrum Demand</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Mohamad Alkadamani</span>, <span class="author">Amir Ghasemi</span>, <span class="author">Halim Yanikomeroglu</span>
+      </div>
+      <p class="paper-abstract">In the diverse landscape of 6G networks, where wireless connectivity demands surge and spectrum resources remain limited, flexible spectrum access becomes paramount. The success of crafting such schemes hinges on our ability to accurately characterize spectrum demand patterns across space and time. ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09942v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09942v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#3</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Role Classification of Hosts within Enterprise Networks Based on Connection Patterns</h3>
+      <div class="paper-meta">
+        <span class="venue">Connection Patterns. Proc. USENIX Annual Technical Conference (USENIX ATC 03), pp. 15-28 (2023)</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Godfrey Tan</span>, <span class="author">Massimiliano Poletto</span>, <span class="author">John Guttag</span>, <span class="author">Frans Kaashoek</span>
+      </div>
+      <p class="paper-abstract">Role classification involves grouping hosts into related roles. It exposes the logical structure of a network, simplifies network management tasks such as policy checking and network segmentation, and can be used to improve the accuracy of network monitoring and analysis algorithms such as intrusion...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09910v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09910v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#4</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">The Bureaucracy of Speed: Structural Equivalence Between Memory Consistency Models and Multi-Agent Authorization Revocation</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Vladyslav Parakhin</span>
+      </div>
+      <p class="paper-abstract">The temporal assumptions underpinning conventional Identity and Access Management collapse under agentic execution regimes. A sixty-second revocation window permits on the order of $6 \times 10^3$ unauthorized API calls at 100 ops/tick; at AWS Lambda scale, the figure approaches $6 \times 10^5$. Thi...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09875v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09875v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#5</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">A Graph-Based Approach to Spectrum Demand Prediction Using Hierarchical Attention Networks</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/11</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Mohamad Alkadamani</span>, <span class="author">Halim Yanikomeroglu</span>, <span class="author">Amir Ghasemi</span>
+      </div>
+      <p class="paper-abstract">The surge in wireless connectivity demand, coupled with the finite nature of spectrum resources, compels the development of efficient spectrum management approaches. Spectrum sharing presents a promising avenue, although it demands precise characterization of spectrum demand for informed policy-maki...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09859v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09859v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#6</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Rate-Distortion Bounds for Heterogeneous Random Fields on Finite Lattices</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Sujata Sinha</span>, <span class="author">Vishwas Rao</span>, <span class="author">Robert Underwood</span>, <span class="author">David Lenz</span>, <span class="author">Sheng Di</span>, <span class="author">Franck Cappello</span>, <span class="author">Lingjia Liu</span>
+      </div>
+      <p class="paper-abstract">Since Shannon&#039;s foundational work, rate-distortion theory has defined the fundamental limits of lossy compression. Classical results, derived for memoryless and stationary ergodic sources in the asymptotic regime, have shaped both transform and predictive coding architectures, as well as practical s...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09833v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09833v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#7</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Layered Dielectric Characterization of Human Skin in the Sub-Terahertz and Terahertz Frequency Ranges</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Silvia Mura</span>, <span class="author">Elisabetta Marini</span>, <span class="author">Maurizio Magarini</span>, <span class="author">Matti Hamalainen</span>, <span class="author">Marco Hernandez</span>
+      </div>
+      <p class="paper-abstract">Sub-terahertz (sub-THz) and terahertz (THz) radiation offer unique opportunities for non-invasive diagnostics and imaging due to their sensitivity to water content and molecular dynamics in biological tissues. In this work, a comprehensive dielectric model of human skin and its cellular constituents...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09822v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09822v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#8</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Experimental Characterization of Biological Tissue Dielectric Properties through THz Time-Domain Spectroscopy</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Elisabetta Marini</span>, <span class="author">Silvia Mura</span>, <span class="author">Marco Hernandez</span>, <span class="author">Matti Hamalainen</span>, <span class="author">Maurizio Magarini</span>
+      </div>
+      <p class="paper-abstract">Terahertz (THz) radiation provides a non-ionizing, highly sensitive probe of the dielectric properties of biological tissues. In this study, we present a comprehensive experimental characterization of dielectric properties using pork skin tissue, a widely used surrogate for human tissue, as a biolog...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09807v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09807v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#9</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Trade-Offs in FMCW Radar-Based Respiration and Heart Rate Variability</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Silvia Mura</span>, <span class="author">Davide Scazzoli</span>, <span class="author">Lorenzo Fineschi</span>, <span class="author">Maurizio Magarini</span>
+      </div>
+      <p class="paper-abstract">This study presents a comprehensive experimental assessment of a low-cost frequency-modulated continuous-wave (FMCW) multiple-input multiple-output (MIMO) radar for non-contact vital sign monitoring, focusing on respiratory rate (RR) and heart rate (HR) estimation. The influence of sensing distance ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09791v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09791v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#10</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Ensuring Data Freshness in Multi-Rate Task Chains Scheduling</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">José Luis Conradi Hoffmann</span>, <span class="author">Antônio Augusto Fröhlich</span>
+      </div>
+      <p class="paper-abstract">In safety-critical autonomous systems, data freshness presents a fundamental design challenge. While the Logical Execution Time (LET) paradigm ensures compositional determinism, it often does so at the cost of injected latency, degrading the phase margin of high-frequency control loops. Furthermore,...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09738v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09738v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#11</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">WVA: A Global Optimization Control Plane for llmd</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Abhishek Malvankar</span>, <span class="author">Lionel Villard</span>, <span class="author">Mohammed Abdi</span>, <span class="author">Evgeny Shindin</span>, <span class="author">Braulio Dumba</span>, <span class="author">Vishakha Ramani</span>, <span class="author">Asser Tantawi</span>, <span class="author">Tamar Eilam</span>
+      </div>
+      <p class="paper-abstract">As Large Language Models (LLMs) scale to handle massive concurrent traffic, optimizing the infrastructure required for inference has become a primary challenge. To manage the high cost of GPU resources while ensuring strict service-level objectives (SLOs), operators increasingly deploy models across...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09730v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09730v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#12</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">When to Lock Attention: Training-Free KV Control in Video Diffusion</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Tianyi Zeng</span>, <span class="author">Jincheng Gao</span>, <span class="author">Tianyi Wang</span>, <span class="author">Zijie Meng</span>, <span class="author">Miao Zhang</span>, <span class="author">Jun Yin</span>, <span class="author">Haoyuan Sun</span>, <span class="author">Junfeng Jiao</span>, <span class="author">Christian Claudel</span>, <span class="author">Junbo Tan</span>, <span class="author">Xueqian Wang</span>
+      </div>
+      <p class="paper-abstract">Maintaining background consistency while enhancing foreground quality remains a core challenge in video editing. Injecting full-image information often leads to background artifacts, whereas rigid background locking severely constrains the model&#039;s capacity for foreground generation. To address this ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09657v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09657v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#13</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">MM-tau-p$^2$: Persona-Adaptive Prompting for Robust Multi-Modal Agent Evaluation in Dual-Control Settings</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Anupam Purwar</span>, <span class="author">Aditya Choudhary</span>
+      </div>
+      <p class="paper-abstract">Current evaluation frameworks and benchmarks for LLM powered agents focus on text chat driven agents, these frameworks do not expose the persona of user to the agent, thus operating in a user agnostic environment. Importantly, in customer experience management domain, the agent&#039;s behaviour evolves a...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09643v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09643v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#14</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Multi-DNN Inference of Sparse Models on Edge SoCs</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Jiawei Luo</span>, <span class="author">Di Wu</span>, <span class="author">Simon Dobson</span>, <span class="author">Blesson Varghese</span>
+      </div>
+      <p class="paper-abstract">Modern edge applications increasingly require multi-DNN inference systems to execute tasks on heterogeneous processors, gaining performance from both concurrent execution and from matching each model to the most suited accelerator. However, existing systems support only a single model (or a few spar...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09642v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09642v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#15</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Randomized Distributed Function Computation (RDFC): Ultra-Efficient Semantic Communication Applications to Privacy</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Onur Günlü</span>
+      </div>
+      <p class="paper-abstract">We establish the randomized distributed function computation (RDFC) framework, in which a sender transmits just enough information for a receiver to generate a randomized function of the input data. Describing RDFC as a form of semantic communication, which can be essentially seen as a generalized r...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09577v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09577v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#16</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Case Study: Performance Analysis of a Virtualized XRootD Frontend in Large-Scale WAN Transfers</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">J M da Silva</span>, <span class="author">M A Costa</span>, <span class="author">R L Iope</span>
+      </div>
+      <p class="paper-abstract">This paper presents a detailed case study of the T2_BR_SPRACE storage frontend architecture and its observed performance in high-intensity data transfers. The architecture is composed of a heterogeneous cluster of XRootD [1] Virtual Machines (VMs) with 10 Gb/s and 40 Gb/s links, which aggregate data...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09568v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09568v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#17</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Compiler-First State Space Duality and Portable $O(1)$ Autoregressive Caching for Inference</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Cosmo Santoni</span>
+      </div>
+      <p class="paper-abstract">State-space model releases are typically coupled to fused CUDA and Triton kernels, inheriting a hard dependency on NVIDIA hardware. We show that Mamba-2&#039;s state space duality algorithm -- diagonal state structure, chunkable recurrence, and einsum-dominated compute with static control flow -- maps cl...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09555v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09555v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#18</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">PixelConfig: Longitudinal Measurement and Reverse-Engineering of Meta Pixel Configurations</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Abdullah Ghani</span>, <span class="author">Yash Vekaria</span>, <span class="author">Zubair Shafiq</span>
+      </div>
+      <p class="paper-abstract">Tracking pixels are used to optimize online ad campaigns through personalization, re-targeting, and conversion tracking. Past research has primarily focused on detecting the prevalence of tracking pixels on the web, with limited attention to how they are configured across websites. A tracking pixel ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09380v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09380v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#19</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">DendroNN: Dendrocentric Neural Networks for Energy-Efficient Classification of Event-Based Data</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Jann Krausse</span>, <span class="author">Zhe Su</span>, <span class="author">Kyrus Mama</span>, <span class="author">Maryada</span>, <span class="author">Klaus Knobloch</span>, <span class="author">Giacomo Indiveri</span>, <span class="author">Jürgen Becker</span>
+      </div>
+      <p class="paper-abstract">Spatiotemporal information is at the core of diverse sensory processing and computational tasks. Feed-forward spiking neural networks can be used to solve these tasks while offering potential benefits in terms of energy efficiency by computing event-based. However, they have trouble decoding tempora...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09274v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09274v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#20</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Flash-KMeans: Fast and Memory-Efficient Exact K-Means</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Shuo Yang</span>, <span class="author">Haocheng Xi</span>, <span class="author">Yilong Zhao</span>, <span class="author">Muyang Li</span>, <span class="author">Xiaoze Fan</span>, <span class="author">Jintao Zhang</span>, <span class="author">Han Cai</span>, <span class="author">Yujun Lin</span>, <span class="author">Xiuyu Li</span>, <span class="author">Kurt Keutzer</span>, <span class="author">Song Han</span>, <span class="author">Chenfeng Xu</span>, <span class="author">Ion Stoica</span>
+      </div>
+      <p class="paper-abstract">$k$-means has historically been positioned primarily as an offline processing primitive, typically used for dataset organization or embedding preprocessing rather than as a first-class component in online systems. In this work, we revisit this classical algorithm under the lens of modern AI system d...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09229v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09229v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#21</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">PIM-SHERPA: Software Method for On-device LLM Inference by Resolving PIM Memory Attribute and Layout Inconsistencies</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Sunjung Lee</span>, <span class="author">Sanghoon Cha</span>, <span class="author">Hyeonsu Kim</span>, <span class="author">Seungwoo Seo</span>, <span class="author">Yuhwan Ro</span>, <span class="author">Sukhan Lee</span>, <span class="author">Byeongho Kim</span>, <span class="author">Yongjun Park</span>, <span class="author">Kyomin Sohn</span>, <span class="author">Seungwon Lee</span>, <span class="author">Jaehoon Yu</span>
+      </div>
+      <p class="paper-abstract">On-device deployments of large language models (LLMs) are rapidly proliferating across mobile and edge platforms. LLM inference comprises a compute-intensive prefill phase and a memory bandwidth-intensive decode phase, and the decode phase has been widely recognized as well-suited to processing-in-m...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09216v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09216v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#22</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Hierarchical Observe-Orient-Decide-Act Enabled UAV Swarms in Uncertain Environments: Frameworks, Potentials, and Challenges</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Ziye Jia</span>, <span class="author">Yao Wu</span>, <span class="author">Qihui Wu</span>, <span class="author">Lijun He</span>, <span class="author">Qiuming Zhu</span>, <span class="author">Fuhui Zhou</span>, <span class="author">Zhu Han</span>
+      </div>
+      <p class="paper-abstract">Unmanned aerial vehicle (UAV) swarms are increasingly explored for their potentials in various applications such as surveillance, disaster response, and military. However, UAV swarms face significant challenges of implementing effective and rapid decisions under dynamic and uncertain environments. T...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09191v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09191v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#23</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Nezha: A Key-Value Separated Distributed Store with Optimized Raft Integration</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Yangyang Wang</span>, <span class="author">Yucong Dong</span>, <span class="author">Ziqian Cheng</span>, <span class="author">Zichen Xu</span>
+      </div>
+      <p class="paper-abstract">Distributed key-value stores are widely adopted to support elastic big data applications, leveraging purpose-built consensus algorithms like Raft to ensure data consistency. However, through systematic analysis, we reveal a critical performance issue in such consistent stores, i.e., overlapping pers...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09122v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09122v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#24</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">PPO-Based Hybrid Optimization for RIS-Assisted Semantic Vehicular Edge Computing</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Wei Feng</span>, <span class="author">Jingbo Zhang</span>, <span class="author">Qiong Wu</span>, <span class="author">Pingyi Fan</span>, <span class="author">Qiang Fan</span>
+      </div>
+      <p class="paper-abstract">To support latency-sensitive Internet of Vehicles (IoV) applications amidst dynamic environments and intermittent links, this paper proposes a Reconfigurable Intelligent Surface (RIS)-aided semantic-aware Vehicle Edge Computing (VEC) framework. This approach integrates RIS to optimize wireless conne...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09082v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09082v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#25</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Accelerating High-Order Finite Element Simulations at Extreme Scale with FP64 Tensor Cores</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Jiqun Tu</span>, <span class="author">Ian Karlin</span>, <span class="author">John Camier</span>, <span class="author">Veselin Dobrev</span>, <span class="author">Tzanio Kolev</span>, <span class="author">Stefan Henneking</span>, <span class="author">Omar Ghattas</span>
+      </div>
+      <p class="paper-abstract">Finite element simulations play a critical role in a wide range of applications, from automotive design to tsunami modeling and computational electromagnetics. Performing these simulations efficiently at the high resolutions needed for practical applications and scientific insights necessitates the ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09038v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09038v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#26</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Two Teachers Better Than One: Hardware-Physics Co-Guided Distributed Scientific Machine Learning</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Yuchen Yuan</span>, <span class="author">Junhuan Yang</span>, <span class="author">Hao Wan</span>, <span class="author">Yipei Liu</span>, <span class="author">Hanhan Wu</span>, <span class="author">Youzuo Lin</span>, <span class="author">Lei Yang</span>
+      </div>
+      <p class="paper-abstract">Scientific machine learning (SciML) is increasingly applied to in-field processing, controlling, and monitoring; however, wide-area sensing, real-time demands, and strict energy and reliability constraints make centralized SciML implementation impractical. Most SciML models assume raw data aggregati...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09032v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09032v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#27</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Automating Detection and Root-Cause Analysis of Flaky Tests in Quantum Software</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Janakan Sivaloganathan</span>, <span class="author">Ainaz Jamshidi</span>, <span class="author">Andriy Miranskyy</span>, <span class="author">Lei Zhang</span>
+      </div>
+      <p class="paper-abstract">Like classical software, quantum software systems rely on automated testing. However, their inherently probabilistic outputs make them susceptible to quantum flakiness -- tests that pass or fail inconsistently without code changes. Such quantum flaky tests can mask real defects and reduce developer ...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09029v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09029v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#28</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">Lockbox -- A Zero Trust Architecture for Secure Processing of Sensitive Cloud Workloads</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Vamshi Krishna Thotempudi</span>, <span class="author">Mahima Agarwal</span>, <span class="author">Raghav Batta</span>, <span class="author">Anjali Mangal</span>
+      </div>
+      <p class="paper-abstract">Enterprises increasingly rely on cloud-based applications to process highly sensitive data artifacts. Although cloud adoption improves agility and scalability, it also introduces new security challenges such as expanded attack surfaces, a wider radius of attack from credential compromise, and challe...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.09025v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.09025v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+    <div class="paper-card tier-other">
+      <div class="paper-header">
+        <span class="paper-index">#29</span>
+        <span class="tier-badge" style="background-color: #808080">
+          一般
+        </span>
+        <span class="quality-score" title="质量得分: 基础40 + 奖励15">
+          55分
+        </span>
+      </div>
+      <h3 class="paper-title">A Policy-Aware Cross-Layer Auditing Service for Tiering and Throttling in Starlink</h3>
+      <div class="paper-meta">
+        <span class="venue">arXiv Preprint</span>
+        <span class="type">❓ 未知</span>
+        <span class="date">📅 2026/3/10</span>
+      </div>
+      <div class="paper-authors">
+        <span class="author">Houtianfu Wang</span>, <span class="author">Hanlin Cai</span>, <span class="author">Haofan Dong</span>, <span class="author">Ozgur B. Akan</span>
+      </div>
+      <p class="paper-abstract">We present a policy-aware, cross-layer methodology for edge-side auditing of service tiering and quota-based throttling in Starlink. Using a multi-week plan-hopping campaign (232.8 h) on a UK residential terminal, we align 1 Hz terminal telemetry with host-side probes to obtain portal-labeled traces...</p>
+      <div class="paper-actions">
+        <a href="https://arxiv.org/abs/2603.08990v1" target="_blank" class="btn">查看论文</a>
+        <a href="https://arxiv.org/pdf/2603.08990v1" target="_blank" class="btn btn-secondary">PDF</a>
+      </div>
+    </div>
+        </div>
+      </div>
+      
+    </div>
+    
+    <footer>
+      <p>Generated by Research Assistant | 智能物联感知与处理领域论文筛选系统</p>
+    </footer>
+  </div>
+  
+  <script>
+    function showAll() {
+      document.querySelectorAll('.tier-section').forEach(s => s.style.display = 'block');
+      updateActiveTab(0);
+    }
+    function showTier(tier) {
+      document.querySelectorAll('.tier-section').forEach(s => {
+        s.style.display = s.dataset.tier === tier ? 'block' : 'none';
+      });
+      const tierMap = { 'A': 1, 'B': 2, 'C': 3, 'other': 4 };
+      updateActiveTab(tierMap[tier]);
+    }
+    function updateActiveTab(index) {
+      document.querySelectorAll('.filter-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+      });
+    }
+  </script>
+</body>
+</html>
