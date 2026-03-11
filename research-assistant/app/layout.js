@@ -18,6 +18,14 @@ const mainNavs = [
 // 下拉菜单分组
 const dropdownGroups = [
   {
+    label: '洞察',
+    icon: '🔍',
+    items: [
+      ['知识图谱', '/knowledge-graph'],
+      ['可视化', '/visual-insights'],
+    ]
+  },
+  {
     label: '报告',
     icon: '📊',
     items: [
