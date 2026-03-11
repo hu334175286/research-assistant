@@ -73,6 +73,18 @@ export default async function DailyReportsPage({ searchParams }) {
 
         <p style={{ marginTop: 0, color: '#4b5563' }}>共 {reports.length} 条，当前命中 {filteredReports.length} 条。</p>
 
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <a href={`/api/reports/export?type=daily&format=md&q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`}>
+            导出 Markdown
+          </a>
+          <a href={`/api/reports/export?type=daily&format=csv&q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`}>
+            导出 CSV
+          </a>
+          <a href={`/api/reports/export?type=daily&format=json&q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}`}>
+            导出 JSON
+          </a>
+        </div>
+
         {!filteredReports.length ? (
           <p style={{ color: '#6b7280' }}>当前筛选条件下暂无日报。</p>
         ) : (
