@@ -104,7 +104,8 @@ class PaperFetcher {
    * 从 XML 中提取标签内容
    */
   extractTag(xml, tagName) {
-    const regex = new RegExp(`<${tagName}[^>]*>([\s\S]*?)<\/${tagName}>`, 'i');
+    // 注意：这里必须使用双反斜杠，确保 RegExp 字符类正确识别换行
+    const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\/${tagName}>`, 'i');
     const match = xml.match(regex);
     return match ? match[1].trim() : '';
   }
@@ -186,15 +187,34 @@ class PaperFetcher {
     // 使用 venueMatcher 评估所有论文
     // 优先从journalRef和comments中提取venue信息
     const evaluated = venueMatcher.evaluatePapers(papers.map(p => {
-      // 尝试从journalRef或comments中提取venue
+      // 尝试从journalRef或comments中提取venue，并保留证据链
       let extractedVenue = null;
+      let venueEvidence = null;
+
       if (p.journalRef) {
         const match = venueMatcher.extractAndMatch(p.journalRef);
-        if (match) extractedVenue = match.name;
+        if (match) {
+          extractedVenue = match.name;
+          venueEvidence = {
+            source: 'journalRef',
+            matchType: match.matchType,
+            extractedVenue: match.extractedVenue || match.abbreviation,
+            raw: p.journalRef
+          };
+        }
       }
+
       if (!extractedVenue && p.comments) {
         const match = venueMatcher.extractAndMatch(p.comments);
-        if (match) extractedVenue = match.name;
+        if (match) {
+          extractedVenue = match.name;
+          venueEvidence = {
+            source: 'comments',
+            matchType: match.matchType,
+            extractedVenue: match.extractedVenue || match.abbreviation,
+            raw: p.comments
+          };
+        }
       }
       
       return {
@@ -205,6 +225,7 @@ class PaperFetcher {
         comments: p.comments,
         journalRef: p.journalRef,
         doi: p.doi,
+        venueEvidence,
         ...p
       };
     }));

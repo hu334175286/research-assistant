@@ -9,8 +9,9 @@ const path = require('path');
 class VenueMatcher {
   constructor() {
     this.whitelist = null;
-    this.venueMap = new Map(); // 用于快速查找
+    this.venueMap = new Map(); // 归一化名称 -> venue
     this.keywordMap = new Map(); // 关键词到venue的映射
+    this.abbrRegexList = []; // 缩写正则，避免子串误匹配
     this.loadWhitelist();
   }
 
@@ -31,41 +32,75 @@ class VenueMatcher {
   }
 
   /**
+   * 文本归一化：小写、去标点、压缩空白
+   */
+  normalizeText(text = '') {
+    return text
+      .toLowerCase()
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[^a-z0-9&+\-\s/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * 转义正则特殊字符
+   */
+  escapeRegExp(text = '') {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
    * 构建快速查找索引
    */
   buildIndex() {
     if (!this.whitelist || !this.whitelist.categories) return;
 
+    this.venueMap.clear();
+    this.keywordMap.clear();
+    this.abbrRegexList = [];
+
     for (const [categoryKey, category] of Object.entries(this.whitelist.categories)) {
       if (!category.venues) continue;
-      
+
       for (const venue of category.venues) {
-        // 建立名称索引
+        const venueEntry = {
+          ...venue,
+          category: categoryKey,
+          tier: category.tier
+        };
+
+        // 建立名称索引（规则化）
         const names = [
-          venue.name.toLowerCase(),
-          venue.abbreviation.toLowerCase(),
-          ...(venue.abbreviation.split('-').map(s => s.toLowerCase()))
-        ];
-        
+          venue.name,
+          venue.abbreviation,
+          ...(venue.abbreviation ? venue.abbreviation.split('-') : [])
+        ]
+          .filter(Boolean)
+          .map((s) => this.normalizeText(s));
+
         for (const name of names) {
-          this.venueMap.set(name, {
-            ...venue,
-            category: categoryKey,
-            tier: category.tier
+          if (name) this.venueMap.set(name, venueEntry);
+        }
+
+        // 为短缩写建立边界正则，避免 "ton" 匹配到 "proton"
+        const abbrNorm = this.normalizeText(venue.abbreviation || '');
+        if (abbrNorm && abbrNorm.length <= 12) {
+          this.abbrRegexList.push({
+            regex: new RegExp(`(^|[^a-z0-9])${this.escapeRegExp(abbrNorm)}([^a-z0-9]|$)`, 'i'),
+            venue: venueEntry
           });
         }
 
         // 建立关键词索引
         if (venue.keywords) {
           for (const keyword of venue.keywords) {
-            if (!this.keywordMap.has(keyword)) {
-              this.keywordMap.set(keyword, []);
+            const keywordNorm = this.normalizeText(keyword);
+            if (!keywordNorm) continue;
+            if (!this.keywordMap.has(keywordNorm)) {
+              this.keywordMap.set(keywordNorm, []);
             }
-            this.keywordMap.get(keyword).push({
-              ...venue,
-              category: categoryKey,
-              tier: category.tier
-            });
+            this.keywordMap.get(keywordNorm).push(venueEntry);
           }
         }
       }
@@ -80,24 +115,34 @@ class VenueMatcher {
   match(venueName) {
     if (!venueName) return null;
 
-    const normalizedName = venueName.toLowerCase().trim();
-    
+    const normalizedName = this.normalizeText(venueName);
+    if (!normalizedName) return null;
+
     // 1. 精确匹配
     if (this.venueMap.has(normalizedName)) {
       return this.venueMap.get(normalizedName);
     }
 
-    // 2. 关键词匹配
-    for (const [keyword, venues] of this.keywordMap) {
-      if (normalizedName.includes(keyword.toLowerCase())) {
-        // 返回最匹配的（关键词最长的优先）
-        return venues.sort((a, b) => b.keywords[0].length - a.keywords[0].length)[0];
+    // 2. 缩写边界匹配（防止子串误报）
+    for (const item of this.abbrRegexList) {
+      if (item.regex.test(normalizedName)) {
+        return item.venue;
       }
     }
 
-    // 3. 模糊匹配 - 检查是否包含缩写
+    // 3. 关键词匹配（按关键词长度优先）
+    const keywordEntries = Array.from(this.keywordMap.entries())
+      .sort((a, b) => b[0].length - a[0].length);
+
+    for (const [keyword, venues] of keywordEntries) {
+      if (normalizedName.includes(keyword)) {
+        return venues[0];
+      }
+    }
+
+    // 4. 模糊包含匹配（仅对较长名字启用，减少误匹配）
     for (const [name, venue] of this.venueMap) {
-      if (normalizedName.includes(name) || name.includes(normalizedName)) {
+      if (name.length >= 6 && (normalizedName.includes(name) || name.includes(normalizedName))) {
         return venue;
       }
     }
