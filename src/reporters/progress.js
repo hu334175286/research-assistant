@@ -7,6 +7,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const PaperFetcher = require('../fetchers/papers');
 const venueMatcher = require('../utils/venueMatcher');
+const PaperFilter = require('../utils/paperFilter');
 
 class ProgressReporter {
   constructor() {
@@ -14,6 +15,7 @@ class ProgressReporter {
     this.reportsDir = path.join(__dirname, '../../reports');
     this.papersFile = path.join(this.dataDir, 'papers.json');
     this.historyFile = path.join(this.dataDir, 'fetch-history.json');
+    this.paperFilter = new PaperFilter();
   }
 
   /**
@@ -126,6 +128,7 @@ class ProgressReporter {
       },
       byTier: this.countByTier(papers),
       bySource: this.countBySource(papers),
+      byQualityBucket: this.countByQualityBucket(papers),
       topVenues: this.countTopVenues(papers),
       venueDistribution: this.getVenueDistribution(papers)
     };
@@ -162,6 +165,17 @@ class ProgressReporter {
       tier2: counts[2],
       other: counts[0]
     };
+  }
+
+  /**
+   * 按质量桶统计
+   */
+  countByQualityBucket(papers) {
+    const normalized = papers.map(p => this.paperFilter.normalizePaper(p));
+    const grouped = this.paperFilter.groupBy(normalized, 'qualityBucket');
+    return Object.fromEntries(
+      Object.entries(grouped).map(([bucket, info]) => [bucket, info.count])
+    );
   }
 
   /**
@@ -285,6 +299,14 @@ class ProgressReporter {
         lines.push('');
       }
 
+      if (report.statistics.byQualityBucket) {
+        lines.push('  质量桶分布:');
+        for (const [bucket, count] of Object.entries(report.statistics.byQualityBucket)) {
+          lines.push(`    • ${bucket}: ${count} 篇`);
+        }
+        lines.push('');
+      }
+
       if (report.statistics.topVenues.length > 0) {
         lines.push('  热门顶刊顶会:');
         for (const [venue, count] of report.statistics.topVenues) {
@@ -375,6 +397,14 @@ class ProgressReporter {
         lines.push(`  - 顶级: ${vs.topTierVenues} 个`);
         lines.push(`  - 二区: ${vs.tier2Venues} 个`);
         lines.push(`- 研究方向关键词: ${vs.researchKeywords} 个`);
+        lines.push('');
+      }
+
+      if (report.statistics.byQualityBucket) {
+        lines.push('### 质量桶分布');
+        for (const [bucket, count] of Object.entries(report.statistics.byQualityBucket)) {
+          lines.push(`- ${bucket}: ${count} 篇`);
+        }
         lines.push('');
       }
 

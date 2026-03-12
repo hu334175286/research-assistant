@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "maxRetries": 3,
+  "retryDelayMs": 2000,
+  "requireAllSuccess": false,
+  "channels": [
+    {
+      "type": "file",
+      "enabled": true,
+      "path": "reports/progress-delivery.log"
+    },
+    {
+      "type": "webhook",
+      "enabled": false,
+      "url": "",
+      "timeoutMs": 10000,
+      "headers": {}
+    }
+  ]
+}

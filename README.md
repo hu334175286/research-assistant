@@ -76,6 +76,9 @@ npm run fetch
 # 生成进展报告
 npm run report
 
+# 测试进展报告质量分层 + 稳定投递
+npm run test:progress
+
 # 测试顶刊顶会识别模块
 npm run test:venue
 
@@ -131,6 +134,13 @@ npm run scheduler:status  # 查看状态
 **会议:**
 - IEEE GLOBECOM, ICC, VTC
 - IEEE PerCom, IPCCC
+
+## 进展汇报稳定投递配置
+
+- 配置文件：`config/report-delivery.json`
+- 默认开启 `file` 投递通道（写入 `reports/progress-delivery.log`）
+- 可按需启用 `webhook` 通道，实现外部系统接收
+- 内置重试、指数退避与幂等防重（避免同一报告重复推送）
 
 ## 开发状态
 

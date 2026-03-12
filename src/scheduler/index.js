@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const PaperFetcher = require('../fetchers/papers');
 const ProgressReporter = require('../reporters/progress');
+const DeliveryManager = require('../reporters/delivery');
 
 class TaskScheduler {
   constructor() {
@@ -203,24 +204,33 @@ class TaskScheduler {
         taskName: 'report'
       });
 
+      const deliveryManager = new DeliveryManager();
+      const delivery = await deliveryManager.deliver(result);
+
       const duration = Date.now() - startTime;
       const summary = {
         type: 'report',
-        status: 'success',
+        status: delivery.delivered ? 'success' : 'partial',
         duration,
         files: result.savedFiles.map(f => path.basename(f)),
         summary: {
           totalPapers: result.report.summary?.totalPapers || 0,
           highPriority: result.report.summary?.highPriority || 0
-        }
+        },
+        delivery
       };
 
       await this.log(summary);
       console.log(`[Scheduler] 报告生成完成: ${result.savedFiles.length} 个文件, 耗时 ${duration}ms`);
       console.log('[Scheduler] 文件列表:');
       result.savedFiles.forEach(f => console.log(`  - ${f}`));
+      if (delivery.skipped) {
+        console.log(`[Scheduler] 投递状态: 跳过 (${delivery.reason})`);
+      } else {
+        console.log(`[Scheduler] 投递状态: ${delivery.delivered ? '成功' : '失败'} (${delivery.successCount || 0}/${delivery.totalChannels || 0})`);
+      }
 
-      return { success: true, result, duration };
+      return { success: delivery.delivered || delivery.skipped, result, delivery, duration };
     } catch (error) {
       const duration = Date.now() - startTime;
       await this.log({
