@@ -74,6 +74,7 @@ class VenueMatcher {
         const names = [
           venue.name,
           venue.abbreviation,
+          ...(venue.aliases || []),
           ...(venue.abbreviation ? venue.abbreviation.split('-') : [])
         ]
           .filter(Boolean)
@@ -205,44 +206,43 @@ class VenueMatcher {
    */
   extractAndMatch(text) {
     if (!text) return null;
-    
-    const normalizedText = text.toLowerCase();
-    
-    // 尝试直接匹配
-    let match = this.match(normalizedText);
-    if (match) return { ...match, matchType: 'direct', extractionSource: text };
-    
-    // 尝试提取常见模式
-    // 模式1: "Proc. IEEE INFOCOM 2005" -> "infocom"
-    // 模式2: "IEEE International Conference on Computer Communications (INFOCOM)"
-    // 模式3: "presented at MobiCom 2024"
-    
-    const patterns = [
-      // 会议缩写提取 (如 INFOCOM, MobiCom, SenSys)
-      /\b(sensys|ipsn|infocom|mobisys|mobicom|nsdi|sigcomm|secon|dcoss|ithings|wf-iot|ccs|ndss|oakland|sp|globecom|icc|vtc|percom|ipccc)\b/gi,
-      // 期刊缩写提取
-      /\b(iot-j|tmc|tpds|ton|tosn|twc|tcom|comst|csur|tii|tsg|compnet|adhoc|jnca|sensors-j|ijdsn|wcmc)\b/gi,
-      // 完整名称关键词
-      /(internet of things journal|mobile computing|sensor networks|computer communications|networking)/gi
-    ];
-    
-    for (const pattern of patterns) {
-      const matches = normalizedText.match(pattern);
-      if (matches) {
-        for (const m of matches) {
-          const venueMatch = this.match(m);
-          if (venueMatch) {
-            return { 
-              ...venueMatch, 
-              matchType: 'extracted',
-              extractionSource: text,
-              extractedVenue: m
-            };
-          }
+
+    const normalizedText = this.normalizeText(text);
+
+    // 1) 整体直接匹配
+    const direct = this.match(normalizedText);
+    if (direct) {
+      return {
+        ...direct,
+        matchType: 'direct',
+        extractionSource: text,
+        extractedVenue: normalizedText
+      };
+    }
+
+    // 2) 按边界切分并尝试短语匹配（规则化，不写死具体会议名）
+    const tokens = normalizedText
+      .split(/[^a-z0-9&+\-/]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    // 优先长短语，避免先匹配到无关短词
+    const maxN = Math.min(8, tokens.length);
+    for (let n = maxN; n >= 1; n--) {
+      for (let i = 0; i + n <= tokens.length; i++) {
+        const phrase = tokens.slice(i, i + n).join(' ');
+        const venueMatch = this.match(phrase);
+        if (venueMatch) {
+          return {
+            ...venueMatch,
+            matchType: n >= 3 ? 'phrase' : 'token',
+            extractionSource: text,
+            extractedVenue: phrase
+          };
         }
       }
     }
-    
+
     return null;
   }
 

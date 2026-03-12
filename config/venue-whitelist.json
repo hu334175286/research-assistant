@@ -154,6 +154,7 @@
         {
           "name": "IEEE International Conference on Computer Communications",
           "abbreviation": "INFOCOM",
+          "aliases": ["IEEE INFOCOM", "Proc IEEE INFOCOM"],
           "publisher": "IEEE",
           "keywords": ["infocom", "computer communications", "ieee infocom"],
           "description": "网络领域顶级会议"
@@ -231,6 +232,7 @@
         {
           "name": "IEEE Symposium on Security and Privacy",
           "abbreviation": "S&P",
+          "aliases": ["IEEE S and P", "IEEE SP", "Oakland"],
           "publisher": "IEEE",
           "keywords": ["s&p", "oakland", "ieee security privacy", "sp symposium"],
           "description": "安全隐私顶级会议"
