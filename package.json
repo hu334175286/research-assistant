@@ -8,6 +8,8 @@
     "fetch": "node src/fetchers/papers.js",
     "report": "node src/reporters/progress.js",
     "test:venue": "node scripts/test-venue-matcher.js",
+    "test:filter": "node scripts/test-paper-filter.js",
+    "test": "npm run test:venue && npm run test:filter",
     "validate:config": "node scripts/validate-config.js",
     "filter": "node src/utils/paperFilter.js",
     "filter:top": "node src/utils/paperFilter.js --top-only",

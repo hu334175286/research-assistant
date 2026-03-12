@@ -89,3 +89,35 @@
 1. 考虑添加更多数据源 (Google Scholar, DBLP)
 2. 优化报告投递方式 (邮件/钉钉/企业微信)
 3. 添加论文去重和更新检测
+
+## 2026-03-12 (深夜) - 抓取质量分层与可视化筛选（下一阶段推进）
+
+### 已完成
+
+1. **重构 paperFilter 数据兼容层**
+   - 新增 `normalizePaper()` 统一新旧两类论文结构（`paper.*` vs 平铺字段）
+   - 自动推断 tier / qualityScore / priority / venue，降低混合数据导致的筛选偏差
+
+2. **质量分层升级**
+   - 增加质量桶分层：`S(90-100) / A(75-89) / B(60-74) / C(40-59) / D(0-39)`
+   - 新增 `byQualityBucket` 统计，用于快速识别高质量论文集中区间
+
+3. **可视化筛选增强**
+   - 在终端报告中加入 ASCII 条形图（tier / priority / quality bucket / venue）
+   - 形成“可读即分析”的命令行可视化体验
+
+4. **报告落盘能力**
+   - 新增 `--save` 参数，一次生成并保存 JSON/TXT/Markdown 三种筛选报告
+   - 输出到 `reports/filter-report-*.{json,txt,md}` 便于后续归档与分享
+
+5. **新增测试**
+   - 新增 `scripts/test-paper-filter.js`
+   - 覆盖：新旧格式兼容、优先级筛选、质量阈值筛选、关键词筛选、质量桶分层、可视化输出
+   - `package.json` 新增：
+     - `npm run test:filter`
+     - `npm test`（串联 `test:venue + test:filter`）
+
+### 验证结果
+
+- ✅ `npm test` 通过
+- ✅ `node src/utils/paperFilter.js --top-only --save` 运行通过并成功落盘报告
