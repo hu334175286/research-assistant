@@ -13,6 +13,7 @@ class TaskScheduler {
   constructor() {
     this.tasks = new Map();
     this.isRunning = false;
+    this.runningCombined = false;
     this.logFile = path.join(__dirname, '../../data/scheduler-log.json');
     this.configFile = path.join(__dirname, '../../config/scheduler.json');
     this.defaultConfig = {
@@ -80,17 +81,68 @@ class TaskScheduler {
   }
 
   /**
+   * 带重试执行
+   */
+  async withRetry(fn, options = {}) {
+    const {
+      maxRetries = 0,
+      retryDelayMs = 0,
+      taskName = 'task'
+    } = options;
+
+    let lastError = null;
+    const totalAttempts = Math.max(1, maxRetries + 1);
+
+    for (let attempt = 1; attempt <= totalAttempts; attempt++) {
+      try {
+        if (attempt > 1) {
+          console.log(`[Scheduler] ${taskName} 重试中 (${attempt}/${totalAttempts})...`);
+        }
+        return await fn(attempt);
+      } catch (error) {
+        lastError = error;
+
+        await this.log({
+          type: taskName,
+          status: 'retry',
+          attempt,
+          totalAttempts,
+          error: error.message
+        });
+
+        if (attempt < totalAttempts && retryDelayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
    * 执行论文抓取任务
    */
-  async runFetchTask() {
+  async runFetchTask(config = this.defaultConfig) {
     const startTime = Date.now();
     console.log(`\n[Scheduler] ${new Date().toLocaleString('zh-CN')} - 开始抓取任务`);
 
     try {
       const fetcher = new PaperFetcher();
-      const result = await fetcher.fetch({
-        arxiv: { maxResults: 50 },
-        filter: { requireRelevant: true }
+      const result = await this.withRetry(async () => {
+        const attemptResult = await fetcher.fetch({
+          arxiv: { maxResults: 50 },
+          filter: { requireRelevant: true }
+        });
+
+        if (!attemptResult.success) {
+          throw new Error(attemptResult.error || 'fetch failed');
+        }
+
+        return attemptResult;
+      }, {
+        maxRetries: config.maxRetries,
+        retryDelayMs: config.retryDelayMs,
+        taskName: 'fetch'
       });
       
       const duration = Date.now() - startTime;
@@ -132,17 +184,23 @@ class TaskScheduler {
   /**
    * 执行报告生成任务
    */
-  async runReportTask() {
+  async runReportTask(config = this.defaultConfig) {
     const startTime = Date.now();
     console.log(`\n[Scheduler] ${new Date().toLocaleString('zh-CN')} - 开始生成报告`);
 
     try {
       const reporter = new ProgressReporter();
-      const result = await reporter.generateAndSave({
-        includePapers: true,
-        includeStats: true,
-        maxPapers: 10,
-        format: 'both'
+      const result = await this.withRetry(async () => {
+        return await reporter.generateAndSave({
+          includePapers: true,
+          includeStats: true,
+          maxPapers: 10,
+          format: 'both'
+        });
+      }, {
+        maxRetries: config.maxRetries,
+        retryDelayMs: config.retryDelayMs,
+        taskName: 'report'
       });
 
       const duration = Date.now() - startTime;
@@ -180,35 +238,58 @@ class TaskScheduler {
    * 组合任务：抓取 + 报告
    */
   async runCombinedTask() {
+    if (this.runningCombined) {
+      const message = '[Scheduler] 检测到上一个组合任务仍在运行，本次触发跳过（防重入）';
+      console.warn(message);
+      await this.log({
+        type: 'combined',
+        status: 'skipped-overlap',
+        message
+      });
+      return {
+        timestamp: new Date().toISOString(),
+        success: false,
+        skipped: true,
+        reason: 'overlap'
+      };
+    }
+
+    this.runningCombined = true;
     console.log('\n' + '='.repeat(60));
     console.log(`[Scheduler] 组合任务开始 - ${new Date().toLocaleString('zh-CN')}`);
     console.log('='.repeat(60));
 
-    // 1. 先执行抓取
-    const fetchResult = await this.runFetchTask();
-    
-    // 2. 无论抓取是否成功，都尝试生成报告
-    const reportResult = await this.runReportTask();
+    try {
+      const config = await this.loadConfig();
 
-    const combinedResult = {
-      timestamp: new Date().toISOString(),
-      fetch: fetchResult,
-      report: reportResult,
-      success: fetchResult.success && reportResult.success
-    };
+      // 1. 先执行抓取
+      const fetchResult = await this.runFetchTask(config);
+      
+      // 2. 无论抓取是否成功，都尝试生成报告
+      const reportResult = await this.runReportTask(config);
 
-    await this.log({
-      type: 'combined',
-      status: combinedResult.success ? 'success' : 'partial',
-      fetchSuccess: fetchResult.success,
-      reportSuccess: reportResult.success
-    });
+      const combinedResult = {
+        timestamp: new Date().toISOString(),
+        fetch: fetchResult,
+        report: reportResult,
+        success: fetchResult.success && reportResult.success
+      };
 
-    console.log('\n' + '='.repeat(60));
-    console.log(`[Scheduler] 组合任务结束 - 状态: ${combinedResult.success ? '成功' : '部分失败'}`);
-    console.log('='.repeat(60) + '\n');
+      await this.log({
+        type: 'combined',
+        status: combinedResult.success ? 'success' : 'partial',
+        fetchSuccess: fetchResult.success,
+        reportSuccess: reportResult.success
+      });
 
-    return combinedResult;
+      console.log('\n' + '='.repeat(60));
+      console.log(`[Scheduler] 组合任务结束 - 状态: ${combinedResult.success ? '成功' : '部分失败'}`);
+      console.log('='.repeat(60) + '\n');
+
+      return combinedResult;
+    } finally {
+      this.runningCombined = false;
+    }
   }
 
   /**

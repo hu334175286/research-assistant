@@ -421,21 +421,30 @@ class ProgressReporter {
     const saved = [];
 
     if (format === 'text' || format === 'both') {
+      const textContent = this.formatAsText(report);
       const textPath = path.join(this.reportsDir, `${filename}.txt`);
-      await fs.writeFile(textPath, this.formatAsText(report));
-      saved.push(textPath);
+      const latestTextPath = path.join(this.reportsDir, 'latest-report.txt');
+      await fs.writeFile(textPath, textContent);
+      await fs.writeFile(latestTextPath, textContent);
+      saved.push(textPath, latestTextPath);
     }
 
     if (format === 'markdown' || format === 'both') {
+      const mdContent = this.formatAsMarkdown(report);
       const mdPath = path.join(this.reportsDir, `${filename}.md`);
-      await fs.writeFile(mdPath, this.formatAsMarkdown(report));
-      saved.push(mdPath);
+      const latestMdPath = path.join(this.reportsDir, 'latest-report.md');
+      await fs.writeFile(mdPath, mdContent);
+      await fs.writeFile(latestMdPath, mdContent);
+      saved.push(mdPath, latestMdPath);
     }
 
     // 同时保存 JSON 格式
+    const jsonContent = JSON.stringify(report, null, 2);
     const jsonPath = path.join(this.reportsDir, `${filename}.json`);
-    await fs.writeFile(jsonPath, JSON.stringify(report, null, 2));
-    saved.push(jsonPath);
+    const latestJsonPath = path.join(this.reportsDir, 'latest-report.json');
+    await fs.writeFile(jsonPath, jsonContent);
+    await fs.writeFile(latestJsonPath, jsonContent);
+    saved.push(jsonPath, latestJsonPath);
 
     return saved;
   }
