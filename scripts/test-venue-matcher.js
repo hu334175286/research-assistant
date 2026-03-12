@@ -35,16 +35,19 @@ const testCases = [
   { input: 'ACM SenSys', expected: 'SenSys' },
   { input: 'IEEE Transactions on Mobile Computing', expected: 'TMC' },
   { input: 'Proc. IEEE INFOCOM 2005', expected: 'INFOCOM' },
+  { input: 'Proceedings of ACM CCS 2023', expected: 'CCS' },
   { input: 'IEEE ICC', expected: 'ICC' },
   { input: 'Unknown Conference', expected: null }
 ];
 
 for (const test of testCases) {
-  const result = venueMatcher.match(test.input);
+  const detailed = venueMatcher.matchDetailed(test.input);
+  const result = detailed ? detailed.venue : null;
   const status = result ? '✅' : (test.expected ? '❌' : '✅');
   const matched = result ? result.abbreviation : '未匹配';
   const tier = result ? `(Tier ${result.tier})` : '';
-  console.log(`${status} "${test.input}" -> ${matched} ${tier}`);
+  const confidence = detailed ? `, conf=${detailed.confidence.toFixed(2)}, by=${detailed.matchedBy}` : '';
+  console.log(`${status} "${test.input}" -> ${matched} ${tier}${confidence}`);
 }
 console.log();
 

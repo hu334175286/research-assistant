@@ -199,6 +199,7 @@ class PaperFetcher {
             source: 'journalRef',
             matchType: match.matchType,
             extractedVenue: match.extractedVenue || match.abbreviation,
+            confidence: match.confidence || null,
             raw: p.journalRef
           };
         }
@@ -212,7 +213,23 @@ class PaperFetcher {
             source: 'comments',
             matchType: match.matchType,
             extractedVenue: match.extractedVenue || match.abbreviation,
+            confidence: match.confidence || null,
             raw: p.comments
+          };
+        }
+      }
+
+      // 回退：直接匹配primaryCategory/venue并记录证据
+      if (!extractedVenue && p.primaryCategory) {
+        const direct = venueMatcher.matchDetailed(p.primaryCategory);
+        if (direct) {
+          extractedVenue = direct.venue.name;
+          venueEvidence = {
+            source: 'primaryCategory',
+            matchType: direct.matchedBy,
+            extractedVenue: direct.matchedText,
+            confidence: direct.confidence || null,
+            raw: p.primaryCategory
           };
         }
       }

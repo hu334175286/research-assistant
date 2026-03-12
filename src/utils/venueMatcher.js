@@ -109,46 +109,118 @@ class VenueMatcher {
   }
 
   /**
-   * 匹配期刊/会议
-   * @param {string} venueName - 期刊或会议名称
-   * @returns {Object|null} 匹配结果
+   * 为 venue 文本生成多种规则化候选（去年份/冗余前缀）
    */
-  match(venueName) {
-    if (!venueName) return null;
+  buildCandidates(venueName = '') {
+    const candidates = [];
+    const pushCandidate = (value, transformed = false) => {
+      const normalized = this.normalizeText(value);
+      if (!normalized) return;
+      if (!candidates.some((item) => item.value === normalized)) {
+        candidates.push({ value: normalized, transformed });
+      }
+    };
 
-    const normalizedName = this.normalizeText(venueName);
-    if (!normalizedName) return null;
+    pushCandidate(venueName, false);
 
-    // 1. 精确匹配
-    if (this.venueMap.has(normalizedName)) {
-      return this.venueMap.get(normalizedName);
-    }
+    let compact = this.normalizeText(venueName)
+      .replace(/\b(19|20)\d{2}\b/g, ' ') // 去年份
+      .replace(/\b(vol|volume|no|issue|pp|pages)\b\s*[a-z0-9\-]*/g, ' ') // 去卷期页
+      .replace(/\s+/g, ' ')
+      .trim();
+    pushCandidate(compact, true);
 
-    // 2. 缩写边界匹配（防止子串误报）
-    for (const item of this.abbrRegexList) {
-      if (item.regex.test(normalizedName)) {
-        return item.venue;
+    compact = compact
+      .replace(/^\b(proc|proceedings|in proceedings|to appear in|presented at|published in)\b\s*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    pushCandidate(compact, true);
+
+    // 若存在括号，如 "IEEE S&P (Oakland)"，分别尝试括号内外
+    const plain = this.normalizeText(venueName);
+    const bracketParts = plain.split(/[()]/).map((s) => s.trim()).filter(Boolean);
+    if (bracketParts.length > 1) {
+      for (const part of bracketParts) {
+        pushCandidate(part, true);
       }
     }
 
-    // 3. 关键词匹配（按关键词长度优先）
+    return candidates;
+  }
+
+  /**
+   * 详细匹配（包含匹配方式与置信度）
+   */
+  matchDetailed(venueName) {
+    if (!venueName) return null;
+
+    const candidates = this.buildCandidates(venueName);
+    if (candidates.length === 0) return null;
+
     const keywordEntries = Array.from(this.keywordMap.entries())
       .sort((a, b) => b[0].length - a[0].length);
 
-    for (const [keyword, venues] of keywordEntries) {
-      if (normalizedName.includes(keyword)) {
-        return venues[0];
-      }
-    }
+    for (const candidate of candidates) {
+      const confidencePenalty = candidate.transformed ? 0.05 : 0;
 
-    // 4. 模糊包含匹配（仅对较长名字启用，减少误匹配）
-    for (const [name, venue] of this.venueMap) {
-      if (name.length >= 6 && (normalizedName.includes(name) || name.includes(normalizedName))) {
-        return venue;
+      // 1. 精确匹配
+      if (this.venueMap.has(candidate.value)) {
+        return {
+          venue: this.venueMap.get(candidate.value),
+          matchedBy: 'exact',
+          matchedText: candidate.value,
+          confidence: Math.max(0, 1.0 - confidencePenalty)
+        };
+      }
+
+      // 2. 缩写边界匹配（防止子串误报）
+      for (const item of this.abbrRegexList) {
+        if (item.regex.test(candidate.value)) {
+          return {
+            venue: item.venue,
+            matchedBy: 'abbreviation',
+            matchedText: candidate.value,
+            confidence: Math.max(0, 0.95 - confidencePenalty)
+          };
+        }
+      }
+
+      // 3. 关键词匹配（按关键词长度优先）
+      for (const [keyword, venues] of keywordEntries) {
+        if (candidate.value.includes(keyword)) {
+          return {
+            venue: venues[0],
+            matchedBy: 'keyword',
+            matchedText: keyword,
+            confidence: Math.max(0, 0.85 - confidencePenalty)
+          };
+        }
+      }
+
+      // 4. 模糊包含匹配（仅对较长名字启用，减少误匹配）
+      for (const [name, venue] of this.venueMap) {
+        if (name.length >= 6 && (candidate.value.includes(name) || name.includes(candidate.value))) {
+          return {
+            venue,
+            matchedBy: 'fuzzy',
+            matchedText: name,
+            confidence: Math.max(0, 0.7 - confidencePenalty)
+          };
+        }
       }
     }
 
     return null;
+  }
+
+  /**
+   * 匹配期刊/会议（兼容旧接口）
+   * @param {string} venueName - 期刊或会议名称
+   * @returns {Object|null} 匹配结果
+   */
+  match(venueName) {
+    const detailed = this.matchDetailed(venueName);
+    return detailed ? detailed.venue : null;
   }
 
   /**
@@ -176,9 +248,10 @@ class VenueMatcher {
    * @returns {Object|null}
    */
   getVenueInfo(venueName) {
-    const match = this.match(venueName);
-    if (!match) return null;
+    const detailed = this.matchDetailed(venueName);
+    if (!detailed) return null;
 
+    const match = detailed.venue;
     const tierDef = this.whitelist?.tierDefinitions?.[match.tier.toString()] || {
       label: '未知',
       description: '未定义等级',
@@ -195,7 +268,10 @@ class VenueMatcher {
       tierLabel: tierDef.label,
       tierScore: tierDef.score,
       tierColor: tierDef.color,
-      isTop: match.tier === 1
+      isTop: match.tier === 1,
+      matchConfidence: detailed.confidence,
+      matchedBy: detailed.matchedBy,
+      matchedText: detailed.matchedText
     };
   }
 
@@ -210,13 +286,14 @@ class VenueMatcher {
     const normalizedText = this.normalizeText(text);
 
     // 1) 整体直接匹配
-    const direct = this.match(normalizedText);
+    const direct = this.matchDetailed(normalizedText);
     if (direct) {
       return {
-        ...direct,
-        matchType: 'direct',
+        ...direct.venue,
+        matchType: direct.matchedBy,
         extractionSource: text,
-        extractedVenue: normalizedText
+        extractedVenue: direct.matchedText,
+        confidence: direct.confidence
       };
     }
 
@@ -231,13 +308,14 @@ class VenueMatcher {
     for (let n = maxN; n >= 1; n--) {
       for (let i = 0; i + n <= tokens.length; i++) {
         const phrase = tokens.slice(i, i + n).join(' ');
-        const venueMatch = this.match(phrase);
+        const venueMatch = this.matchDetailed(phrase);
         if (venueMatch) {
           return {
-            ...venueMatch,
+            ...venueMatch.venue,
             matchType: n >= 3 ? 'phrase' : 'token',
             extractionSource: text,
-            extractedVenue: phrase
+            extractedVenue: phrase,
+            confidence: Math.max(0, venueMatch.confidence - 0.05)
           };
         }
       }
@@ -259,7 +337,7 @@ class VenueMatcher {
 
     const text = (title + ' ' + abstract).toLowerCase();
     const matchedKeywords = [];
-    
+
     for (const keyword of this.whitelist.researchKeywords) {
       if (text.includes(keyword.toLowerCase())) {
         matchedKeywords.push(keyword);
@@ -268,7 +346,7 @@ class VenueMatcher {
 
     // 计算相关性分数 (0-1)
     const score = Math.min(matchedKeywords.length / 3, 1);
-    
+
     return {
       relevant: matchedKeywords.length > 0,
       matchedKeywords,
@@ -283,12 +361,12 @@ class VenueMatcher {
    * @returns {Object} 评估结果
    */
   evaluatePaper(paper) {
-    const { title, venue, abstract, authors, comments } = paper;
-    
+    const { title, venue, abstract, comments } = paper;
+
     // 优先从comments/journal-ref中提取venue信息（arXiv常见）
     let venueInfo = null;
     let matchSource = 'venue';
-    
+
     if (comments) {
       const extracted = this.extractAndMatch(comments);
       if (extracted) {
@@ -296,18 +374,23 @@ class VenueMatcher {
         matchSource = 'comments';
       }
     }
-    
+
     // 如果没有从comments匹配到，使用原始venue
     if (!venueInfo && venue) {
       venueInfo = this.getVenueInfo(venue);
     }
-    
+
     const relevance = this.checkRelevance(title, abstract);
-    
+
     // 综合质量分数 (0-100)
     let qualityScore = 0;
     if (venueInfo) {
-      qualityScore += venueInfo.tierScore * 0.5; // venue等级占50%
+      const confidenceWeight = venueInfo.matchConfidence >= 0.9
+        ? 1
+        : venueInfo.matchConfidence >= 0.8
+          ? 0.9
+          : 0.75;
+      qualityScore += venueInfo.tierScore * 0.5 * confidenceWeight; // venue等级占50%
     }
     qualityScore += relevance.score * 50; // 相关性占50%
 
@@ -359,10 +442,10 @@ class VenueMatcher {
    */
   evaluatePapers(papers) {
     const evaluated = papers.map(p => this.evaluatePaper(p));
-    
+
     // 按优先级和质量分数排序
     const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2, NONE: 3 };
-    
+
     return evaluated.sort((a, b) => {
       if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
