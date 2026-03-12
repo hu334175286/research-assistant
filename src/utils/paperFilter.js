@@ -376,6 +376,15 @@ async function main() {
       case '--relevant':
         criteria.requireRelevant = true;
         break;
+      case '--source':
+        criteria.sources = (criteria.sources || []).concat(String(args[++i] || '').split(',').filter(Boolean));
+        break;
+      case '--venue':
+        criteria.venues = (criteria.venues || []).concat(String(args[++i] || '').split(',').filter(Boolean));
+        break;
+      case '--keyword':
+        criteria.keywords = (criteria.keywords || []).concat(String(args[++i] || '').split(',').filter(Boolean));
+        break;
       case '--save':
         shouldSave = true;
         break;
