@@ -21,6 +21,16 @@
       "score": 60
     }
   },
+  "recognitionRules": {
+    "removePatterns": [
+      "\\b(19|20)\\d{2}\\b",
+      "\\b(vol|volume|no|issue|pp|pages)\\b\\s*[a-z0-9\\-]*",
+      "\\bdoi\\s*[:：]?\\s*10\\.[^\\s]+",
+      "\\b(proc|proceedings|in proceedings of|to appear in|presented at|accepted by|published in)\\b"
+    ],
+    "tokenSplitRegex": "[^a-z0-9&+\\\\-/]+",
+    "maxNgram": 8
+  },
   "categories": {
     "top-journals": {
       "name": "顶级期刊",

@@ -9,6 +9,7 @@ const path = require('path');
 class VenueMatcher {
   constructor() {
     this.whitelist = null;
+    this.rules = null;
     this.venueMap = new Map(); // 归一化名称 -> venue
     this.keywordMap = new Map(); // 关键词到venue的映射
     this.abbrRegexList = []; // 缩写正则，避免子串误匹配
@@ -23,11 +24,13 @@ class VenueMatcher {
       const configPath = path.join(__dirname, '../../config/venue-whitelist.json');
       const data = fs.readFileSync(configPath, 'utf8');
       this.whitelist = JSON.parse(data);
+      this.rules = this.whitelist?.recognitionRules || {};
       this.buildIndex();
       console.log('[VenueMatcher] 白名单加载成功');
     } catch (error) {
       console.error('[VenueMatcher] 加载白名单失败:', error.message);
       this.whitelist = { categories: {} };
+      this.rules = {};
     }
   }
 
@@ -35,8 +38,9 @@ class VenueMatcher {
    * 文本归一化：小写、去标点、压缩空白
    */
   normalizeText(text = '') {
-    return text
+    return String(text)
       .toLowerCase()
+      .normalize('NFKD')
       .replace(/[\u2013\u2014]/g, '-')
       .replace(/[^a-z0-9&+\-\s/]/g, ' ')
       .replace(/\s+/g, ' ')
@@ -47,7 +51,7 @@ class VenueMatcher {
    * 转义正则特殊字符
    */
   escapeRegExp(text = '') {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
@@ -108,6 +112,21 @@ class VenueMatcher {
     }
   }
 
+  stripNoise(text = '') {
+    const removable = this.rules?.removePatterns || [];
+    let cleaned = this.normalizeText(text);
+
+    for (const pattern of removable) {
+      try {
+        cleaned = cleaned.replace(new RegExp(pattern, 'gi'), ' ');
+      } catch (_) {
+        // 忽略非法规则，保证流程可用
+      }
+    }
+
+    return cleaned.replace(/\s+/g, ' ').trim();
+  }
+
   /**
    * 为 venue 文本生成多种规则化候选（去年份/冗余前缀）
    */
@@ -123,11 +142,7 @@ class VenueMatcher {
 
     pushCandidate(venueName, false);
 
-    let compact = this.normalizeText(venueName)
-      .replace(/\b(19|20)\d{2}\b/g, ' ') // 去年份
-      .replace(/\b(vol|volume|no|issue|pp|pages)\b\s*[a-z0-9\-]*/g, ' ') // 去卷期页
-      .replace(/\s+/g, ' ')
-      .trim();
+    let compact = this.stripNoise(venueName);
     pushCandidate(compact, true);
 
     compact = compact
@@ -215,37 +230,23 @@ class VenueMatcher {
 
   /**
    * 匹配期刊/会议（兼容旧接口）
-   * @param {string} venueName - 期刊或会议名称
-   * @returns {Object|null} 匹配结果
    */
   match(venueName) {
     const detailed = this.matchDetailed(venueName);
     return detailed ? detailed.venue : null;
   }
 
-  /**
-   * 获取论文质量等级
-   * @param {string} venueName - 期刊或会议名称
-   * @returns {number} 等级 (1=顶刊顶会, 2=二区, 0=未知)
-   */
   getTier(venueName) {
     const match = this.match(venueName);
     return match ? match.tier : 0;
   }
 
-  /**
-   * 判断是否为顶刊顶会
-   * @param {string} venueName - 期刊或会议名称
-   * @returns {boolean}
-   */
   isTopVenue(venueName) {
     return this.getTier(venueName) === 1;
   }
 
   /**
    * 获取完整的venue信息
-   * @param {string} venueName - 期刊或会议名称
-   * @returns {Object|null}
    */
   getVenueInfo(venueName) {
     const detailed = this.matchDetailed(venueName);
@@ -277,13 +278,11 @@ class VenueMatcher {
 
   /**
    * 从文本中提取venue名称并匹配
-   * @param {string} text - 包含venue信息的文本（如arXiv注释）
-   * @returns {Object|null} 匹配结果
    */
   extractAndMatch(text) {
     if (!text) return null;
 
-    const normalizedText = this.normalizeText(text);
+    const normalizedText = this.stripNoise(text);
 
     // 1) 整体直接匹配
     const direct = this.matchDetailed(normalizedText);
@@ -298,13 +297,21 @@ class VenueMatcher {
     }
 
     // 2) 按边界切分并尝试短语匹配（规则化，不写死具体会议名）
-    const tokens = normalizedText
-      .split(/[^a-z0-9&+\-/]+/)
-      .map((t) => t.trim())
-      .filter(Boolean);
+    const tokenPattern = this.rules?.tokenSplitRegex || '[^a-z0-9&+\\-/]+';
+    let tokens = [];
+    try {
+      tokens = normalizedText
+        .split(new RegExp(tokenPattern, 'g'))
+        .map((t) => t.trim())
+        .filter(Boolean);
+    } catch (_) {
+      tokens = normalizedText
+        .split(/[^a-z0-9&+\-/]+/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
 
-    // 优先长短语，避免先匹配到无关短词
-    const maxN = Math.min(8, tokens.length);
+    const maxN = Math.min(this.rules?.maxNgram || 8, tokens.length);
     for (let n = maxN; n >= 1; n--) {
       for (let i = 0; i + n <= tokens.length; i++) {
         const phrase = tokens.slice(i, i + n).join(' ');
@@ -324,12 +331,6 @@ class VenueMatcher {
     return null;
   }
 
-  /**
-   * 检查论文是否与研究方向相关
-   * @param {string} title - 论文标题
-   * @param {string} abstract - 论文摘要
-   * @returns {Object} 相关性分析结果
-   */
   checkRelevance(title = '', abstract = '') {
     if (!this.whitelist || !this.whitelist.researchKeywords) {
       return { relevant: false, matchedKeywords: [], score: 0 };
@@ -344,7 +345,6 @@ class VenueMatcher {
       }
     }
 
-    // 计算相关性分数 (0-1)
     const score = Math.min(matchedKeywords.length / 3, 1);
 
     return {
@@ -355,15 +355,9 @@ class VenueMatcher {
     };
   }
 
-  /**
-   * 对论文进行完整评估
-   * @param {Object} paper - 论文对象
-   * @returns {Object} 评估结果
-   */
   evaluatePaper(paper) {
     const { title, venue, abstract, comments } = paper;
 
-    // 优先从comments/journal-ref中提取venue信息（arXiv常见）
     let venueInfo = null;
     let matchSource = 'venue';
 
@@ -375,14 +369,12 @@ class VenueMatcher {
       }
     }
 
-    // 如果没有从comments匹配到，使用原始venue
     if (!venueInfo && venue) {
       venueInfo = this.getVenueInfo(venue);
     }
 
     const relevance = this.checkRelevance(title, abstract);
 
-    // 综合质量分数 (0-100)
     let qualityScore = 0;
     if (venueInfo) {
       const confidenceWeight = venueInfo.matchConfidence >= 0.9
@@ -390,9 +382,9 @@ class VenueMatcher {
         : venueInfo.matchConfidence >= 0.8
           ? 0.9
           : 0.75;
-      qualityScore += venueInfo.tierScore * 0.5 * confidenceWeight; // venue等级占50%
+      qualityScore += venueInfo.tierScore * 0.5 * confidenceWeight;
     }
-    qualityScore += relevance.score * 50; // 相关性占50%
+    qualityScore += relevance.score * 50;
 
     return {
       paper,
@@ -405,9 +397,6 @@ class VenueMatcher {
     };
   }
 
-  /**
-   * 计算论文优先级
-   */
   calculatePriority(venueInfo, relevance) {
     if (venueInfo && venueInfo.tier === 1 && relevance.isHighlyRelevant) {
       return 'HIGH';
@@ -419,31 +408,16 @@ class VenueMatcher {
     return 'NONE';
   }
 
-  /**
-   * 生成推荐建议
-   */
   generateRecommendation(qualityScore, relevance) {
-    if (qualityScore >= 80) {
-      return '强烈推荐阅读 - 顶刊顶会且高度相关';
-    } else if (qualityScore >= 60) {
-      return '推荐阅读 - 质量较高或较为相关';
-    } else if (qualityScore >= 40) {
-      return '可参考 - 有一定价值';
-    } else if (relevance.relevant) {
-      return '快速浏览 - 仅因关键词匹配';
-    }
+    if (qualityScore >= 80) return '强烈推荐阅读 - 顶刊顶会且高度相关';
+    if (qualityScore >= 60) return '推荐阅读 - 质量较高或较为相关';
+    if (qualityScore >= 40) return '可参考 - 有一定价值';
+    if (relevance.relevant) return '快速浏览 - 仅因关键词匹配';
     return '暂不关注';
   }
 
-  /**
-   * 批量评估论文列表
-   * @param {Array} papers - 论文列表
-   * @returns {Array} 评估后的论文列表（按优先级排序）
-   */
   evaluatePapers(papers) {
     const evaluated = papers.map(p => this.evaluatePaper(p));
-
-    // 按优先级和质量分数排序
     const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2, NONE: 3 };
 
     return evaluated.sort((a, b) => {
@@ -454,28 +428,18 @@ class VenueMatcher {
     });
   }
 
-  /**
-   * 获取所有顶刊顶会列表
-   * @returns {Array}
-   */
   getTopVenues() {
     const topVenues = [];
     if (!this.whitelist || !this.whitelist.categories) return topVenues;
 
     for (const [categoryKey, category] of Object.entries(this.whitelist.categories)) {
       if (category.tier === 1 && category.venues) {
-        topVenues.push(...category.venues.map(v => ({
-          ...v,
-          category: categoryKey
-        })));
+        topVenues.push(...category.venues.map(v => ({ ...v, category: categoryKey })));
       }
     }
     return topVenues;
   }
 
-  /**
-   * 获取统计信息
-   */
   getStats() {
     if (!this.whitelist || !this.whitelist.categories) return null;
 
@@ -501,5 +465,4 @@ class VenueMatcher {
   }
 }
 
-// 导出单例
 module.exports = new VenueMatcher();

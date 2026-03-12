@@ -190,6 +190,7 @@ class PaperFetcher {
       // 尝试从journalRef或comments中提取venue，并保留证据链
       let extractedVenue = null;
       let venueEvidence = null;
+      let recognition = { matched: false, source: 'fallback', confidence: 0, matchType: 'none' };
 
       if (p.journalRef) {
         const match = venueMatcher.extractAndMatch(p.journalRef);
@@ -201,6 +202,12 @@ class PaperFetcher {
             extractedVenue: match.extractedVenue || match.abbreviation,
             confidence: match.confidence || null,
             raw: p.journalRef
+          };
+          recognition = {
+            matched: true,
+            source: 'journalRef',
+            confidence: match.confidence || 0,
+            matchType: match.matchType || 'unknown'
           };
         }
       }
@@ -215,6 +222,12 @@ class PaperFetcher {
             extractedVenue: match.extractedVenue || match.abbreviation,
             confidence: match.confidence || null,
             raw: p.comments
+          };
+          recognition = {
+            matched: true,
+            source: 'comments',
+            confidence: match.confidence || 0,
+            matchType: match.matchType || 'unknown'
           };
         }
       }
@@ -231,6 +244,12 @@ class PaperFetcher {
             confidence: direct.confidence || null,
             raw: p.primaryCategory
           };
+          recognition = {
+            matched: true,
+            source: 'primaryCategory',
+            confidence: direct.confidence || 0,
+            matchType: direct.matchedBy || 'unknown'
+          };
         }
       }
       
@@ -243,6 +262,7 @@ class PaperFetcher {
         journalRef: p.journalRef,
         doi: p.doi,
         venueEvidence,
+        venueRecognition: recognition,
         ...p
       };
     }));
@@ -275,13 +295,26 @@ class PaperFetcher {
     // 输出统计信息
     const tierCounts = { 1: 0, 2: 0, 0: 0 };
     const priorityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0, NONE: 0 };
+    const recognitionCounts = { matched: 0, unmatched: 0, highConfidence: 0 };
+
     for (const item of filtered) {
       const tier = item.venueInfo?.tier || 0;
       tierCounts[tier] = (tierCounts[tier] || 0) + 1;
       priorityCounts[item.priority] = (priorityCounts[item.priority] || 0) + 1;
+
+      if (item.venueRecognition?.matched) {
+        recognitionCounts.matched += 1;
+        if ((item.venueRecognition.confidence || 0) >= 0.9) {
+          recognitionCounts.highConfidence += 1;
+        }
+      } else {
+        recognitionCounts.unmatched += 1;
+      }
     }
+
     console.log(`[PaperFetcher] 等级分布: 顶级=${tierCounts[1]}, 二区=${tierCounts[2]}, 其他=${tierCounts[0]}`);
     console.log(`[PaperFetcher] 优先级分布: 高=${priorityCounts.HIGH}, 中=${priorityCounts.MEDIUM}, 低=${priorityCounts.LOW}`);
+    console.log(`[PaperFetcher] Venue识别: 命中=${recognitionCounts.matched}, 高置信=${recognitionCounts.highConfidence}, 未命中=${recognitionCounts.unmatched}`);
     
     return filtered;
   }
