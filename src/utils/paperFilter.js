@@ -5,11 +5,11 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const venueMatcher = require('../src/utils/venueMatcher');
+const venueMatcher = require('./venueMatcher');
 
 class PaperFilter {
   constructor() {
-    this.dataDir = path.join(__dirname, '../data');
+    this.dataDir = path.join(__dirname, '../../data');
     this.papersFile = path.join(this.dataDir, 'papers.json');
   }
 
@@ -45,12 +45,13 @@ class PaperFilter {
     } = criteria;
 
     return papers.filter(p => {
-      // 等级筛选
-      const tier = p.venueInfo?.tier || 0;
+      // 等级筛选 (兼容新旧数据格式)
+      const tier = p.venueInfo?.tier || p.venueAnalysis?.tierScore / 100 || 0;
       if (tier < minTier || tier > maxTier) return false;
 
-      // 优先级筛选
-      if (!priorities.includes(p.priority)) return false;
+      // 优先级筛选 (旧数据可能没有priority字段)
+      const priority = p.priority || 'NONE';
+      if (!priorities.includes(priority)) return false;
 
       // 相关性要求
       if (requireRelevant && !p.relevance?.relevant) return false;
@@ -73,9 +74,10 @@ class PaperFilter {
         if (!hasKeyword) return false;
       }
 
-      // Venue筛选
+      // Venue筛选 (兼容新旧数据格式)
       if (venues.length > 0) {
-        const venue = p.venueInfo?.abbreviation || p.venueInfo?.name;
+        const venue = p.venueInfo?.abbreviation || p.venueInfo?.name || 
+                      p.venueAnalysis?.matched?.abbr || p.venueAnalysis?.matched?.name;
         if (!venues.some(v => venue?.toLowerCase().includes(v.toLowerCase()))) {
           return false;
         }
@@ -102,13 +104,14 @@ class PaperFilter {
       let key;
       switch (dimension) {
         case 'tier':
-          key = `Tier ${paper.venueInfo?.tier || 0}`;
+          key = `Tier ${paper.venueInfo?.tier || paper.venueAnalysis?.tierScore / 100 || 0}`;
           break;
         case 'priority':
-          key = paper.priority;
+          key = paper.priority || 'NONE';
           break;
         case 'venue':
-          key = paper.venueInfo?.abbreviation || paper.venueInfo?.name || 'Unknown';
+          key = paper.venueInfo?.abbreviation || paper.venueInfo?.name || 
+                paper.venueAnalysis?.matched?.abbr || paper.venueAnalysis?.matched?.name || 'Unknown';
           break;
         case 'source':
           key = paper.paper?.source || paper.source || 'Unknown';
@@ -128,8 +131,8 @@ class PaperFilter {
       if (groups[key].papers.length < 5) {
         groups[key].papers.push({
           title: paper.paper?.title || paper.title,
-          priority: paper.priority,
-          qualityScore: paper.qualityScore
+          priority: paper.priority || 'NONE',
+          qualityScore: paper.qualityScore || paper.venueAnalysis?.tierScore || 0
         });
       }
     }
@@ -252,7 +255,7 @@ async function main() {
   const args = process.argv.slice(2);
   const criteria = {
     minTier: 0,
-    priorities: ['HIGH', 'MEDIUM', 'LOW']
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE']  // 包含NONE以兼容旧数据
   };
 
   for (let i = 0; i < args.length; i++) {
