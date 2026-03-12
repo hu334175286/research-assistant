@@ -1,14 +1,13 @@
 # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+package-lock.json
+yarn.lock
 
-# Data files
+# Data files (generated)
 data/*.json
 !data/.gitkeep
 
-# Reports
+# Reports (generated)
 reports/*.txt
 reports/*.md
 reports/*.json
@@ -17,20 +16,36 @@ reports/*.json
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Environment variables
 .env
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Test coverage
-coverage/
+# Temporary files
+tmp/
+temp/
+*.tmp

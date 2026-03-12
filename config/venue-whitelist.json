@@ -1,9 +1,28 @@
 {
-  "description": "智能物联感知与处理领域顶刊顶会白名单",
-  "version": "1.1.0",
-  "lastUpdated": "2026-03-12",
+  "version": "1.0.0",
+  "description": "智能物联感知与处理 - 顶刊顶会白名单",
+  "tierDefinitions": {
+    "1": {
+      "label": "顶级",
+      "description": "CCF A类 / 中科院一区 / 领域顶级",
+      "color": "#FFD700",
+      "score": 100
+    },
+    "2": {
+      "label": "二区",
+      "description": "CCF B类 / 中科院二区 / 高水平",
+      "color": "#C0C0C0",
+      "score": 80
+    },
+    "3": {
+      "label": "三区",
+      "description": "CCF C类 / 中科院三区",
+      "color": "#CD7F32",
+      "score": 60
+    }
+  },
   "categories": {
-    "topJournals": {
+    "top-journals": {
       "name": "顶级期刊",
       "tier": 1,
       "venues": [
@@ -11,95 +30,110 @@
           "name": "IEEE Internet of Things Journal",
           "abbreviation": "IoT-J",
           "publisher": "IEEE",
-          "keywords": ["internet of things", "iot journal"]
+          "keywords": ["iot-j", "internet of things journal", "ieee internet of things"],
+          "description": "物联网领域顶级期刊"
         },
         {
           "name": "IEEE Transactions on Mobile Computing",
           "abbreviation": "TMC",
           "publisher": "IEEE",
-          "keywords": ["mobile computing", "transactions on mobile"]
+          "keywords": ["tmc", "transactions on mobile computing", "ieee tmc"],
+          "description": "移动计算顶级期刊"
         },
         {
           "name": "IEEE Transactions on Parallel and Distributed Systems",
           "abbreviation": "TPDS",
           "publisher": "IEEE",
-          "keywords": ["parallel", "distributed systems"]
+          "keywords": ["tpds", "parallel and distributed systems", "ieee tpds"],
+          "description": "并行与分布式系统顶级期刊"
         },
         {
           "name": "IEEE/ACM Transactions on Networking",
           "abbreviation": "ToN",
           "publisher": "IEEE/ACM",
-          "keywords": ["networking", "transactions on networking"]
+          "keywords": ["ton", "transactions on networking", "ieee/acm ton"],
+          "description": "网络领域顶级期刊"
         },
         {
           "name": "ACM Transactions on Sensor Networks",
           "abbreviation": "TOSN",
           "publisher": "ACM",
-          "keywords": ["sensor networks", "tosn"]
+          "keywords": ["tosn", "transactions on sensor networks", "acm tosn"],
+          "description": "传感器网络顶级期刊"
         },
         {
           "name": "IEEE Transactions on Wireless Communications",
           "abbreviation": "TWC",
           "publisher": "IEEE",
-          "keywords": ["wireless communications"]
+          "keywords": ["twc", "transactions on wireless communications", "ieee twc"],
+          "description": "无线通信顶级期刊"
         },
         {
           "name": "IEEE Transactions on Communications",
           "abbreviation": "TCOM",
           "publisher": "IEEE",
-          "keywords": ["communications"]
-        },
-        {
-          "name": "Proceedings of the IEEE",
-          "abbreviation": "Proc. IEEE",
-          "publisher": "IEEE",
-          "keywords": ["proceedings of the ieee"]
+          "keywords": ["tcom", "transactions on communications", "ieee tcom"],
+          "description": "通信领域顶级期刊"
         },
         {
           "name": "IEEE Communications Surveys & Tutorials",
-          "abbreviation": "ComST",
+          "abbreviation": "COMST",
           "publisher": "IEEE",
-          "keywords": ["communications surveys", "tutorials"]
+          "keywords": ["comst", "communications surveys", "ieee surveys"],
+          "description": "通信综述顶级期刊"
         },
         {
           "name": "ACM Computing Surveys",
           "abbreviation": "CSUR",
           "publisher": "ACM",
-          "keywords": ["computing surveys"]
+          "keywords": ["csur", "computing surveys", "acm surveys"],
+          "description": "计算机综述顶级期刊"
         },
         {
           "name": "IEEE Transactions on Industrial Informatics",
           "abbreviation": "TII",
           "publisher": "IEEE",
-          "keywords": ["industrial informatics"]
+          "keywords": ["tii", "transactions on industrial informatics", "ieee tii"],
+          "description": "工业信息学顶级期刊"
         },
         {
           "name": "IEEE Transactions on Smart Grid",
           "abbreviation": "TSG",
           "publisher": "IEEE",
-          "keywords": ["smart grid"]
+          "keywords": ["tsg", "transactions on smart grid", "ieee tsg"],
+          "description": "智能电网顶级期刊"
         },
         {
           "name": "Computer Networks",
-          "abbreviation": "CompNet",
+          "abbreviation": "COMNET",
           "publisher": "Elsevier",
-          "keywords": ["computer networks"]
+          "keywords": ["computer networks", "comnet", "elsevier networks"],
+          "description": "计算机网络知名期刊"
         },
         {
           "name": "Ad Hoc Networks",
-          "abbreviation": "AdHoc",
+          "abbreviation": "ADHOC",
           "publisher": "Elsevier",
-          "keywords": ["ad hoc networks"]
+          "keywords": ["adhoc networks", "ad hoc networks", "elsevier adhoc"],
+          "description": "自组织网络顶级期刊"
         },
         {
           "name": "Journal of Network and Computer Applications",
           "abbreviation": "JNCA",
           "publisher": "Elsevier",
-          "keywords": ["network and computer applications"]
+          "keywords": ["jnca", "network and computer applications", "elsevier jnca"],
+          "description": "网络应用知名期刊"
+        },
+        {
+          "name": "IEEE Transactions on Information Forensics and Security",
+          "abbreviation": "TIFS",
+          "publisher": "IEEE",
+          "keywords": ["tifs", "information forensics and security", "ieee tifs"],
+          "description": "信息安全顶级期刊"
         }
       ]
     },
-    "topConferences": {
+    "top-conferences": {
       "name": "顶级会议",
       "tier": 1,
       "venues": [
@@ -107,197 +141,197 @@
           "name": "ACM Conference on Embedded Networked Sensor Systems",
           "abbreviation": "SenSys",
           "publisher": "ACM",
-          "keywords": ["sensys", "embedded networked sensor"]
+          "keywords": ["sensys", "embedded networked sensor systems", "acm sensys"],
+          "description": "传感器网络顶级会议"
         },
         {
           "name": "ACM/IEEE International Conference on Information Processing in Sensor Networks",
           "abbreviation": "IPSN",
           "publisher": "ACM/IEEE",
-          "keywords": ["ipsn", "information processing sensor"]
+          "keywords": ["ipsn", "information processing in sensor networks", "acm/ieee ipsn"],
+          "description": "传感器网络信息处理顶级会议"
         },
         {
           "name": "IEEE International Conference on Computer Communications",
           "abbreviation": "INFOCOM",
           "publisher": "IEEE",
-          "keywords": ["infocom", "computer communications"]
+          "keywords": ["infocom", "computer communications", "ieee infocom"],
+          "description": "网络领域顶级会议"
         },
         {
           "name": "ACM International Conference on Mobile Systems, Applications, and Services",
           "abbreviation": "MobiSys",
           "publisher": "ACM",
-          "keywords": ["mobisys", "mobile systems"]
+          "keywords": ["mobisys", "mobile systems", "acm mobisys"],
+          "description": "移动系统顶级会议"
         },
         {
           "name": "ACM International Conference on Mobile Computing and Networking",
           "abbreviation": "MobiCom",
           "publisher": "ACM",
-          "keywords": ["mobicom", "mobile computing"]
+          "keywords": ["mobicom", "mobile computing", "acm mobicom"],
+          "description": "移动计算顶级会议"
         },
         {
           "name": "USENIX Symposium on Networked Systems Design and Implementation",
           "abbreviation": "NSDI",
           "publisher": "USENIX",
-          "keywords": ["nsdi", "networked systems"]
+          "keywords": ["nsdi", "networked systems design", "usenix nsdi"],
+          "description": "网络系统设计顶级会议"
         },
         {
           "name": "ACM SIGCOMM Conference",
           "abbreviation": "SIGCOMM",
           "publisher": "ACM",
-          "keywords": ["sigcomm"]
-        },
-        {
-          "name": "IEEE Conference on Computer Communications",
-          "abbreviation": "INFOCOM",
-          "publisher": "IEEE",
-          "keywords": ["infocom"]
+          "keywords": ["sigcomm", "data communication", "acm sigcomm"],
+          "description": "数据通信顶级会议"
         },
         {
           "name": "IEEE International Conference on Sensing, Communication, and Networking",
           "abbreviation": "SECON",
           "publisher": "IEEE",
-          "keywords": ["secon", "sensing communication networking"]
+          "keywords": ["secon", "sensing communication networking", "ieee secon"],
+          "description": "感知通信网络顶级会议"
         },
         {
           "name": "IEEE International Conference on Distributed Computing in Sensor Systems",
           "abbreviation": "DCOSS",
           "publisher": "IEEE",
-          "keywords": ["dcoss", "distributed computing sensor"]
+          "keywords": ["dcoss", "distributed computing sensor systems", "ieee dcoss"],
+          "description": "传感器分布式计算顶级会议"
         },
         {
           "name": "IEEE International Conference on Internet of Things",
           "abbreviation": "iThings",
           "publisher": "IEEE",
-          "keywords": ["ithings", "internet of things"]
+          "keywords": ["ithings", "internet of things conference", "ieee ithings"],
+          "description": "物联网重要会议"
         },
         {
           "name": "IEEE World Forum on Internet of Things",
           "abbreviation": "WF-IoT",
           "publisher": "IEEE",
-          "keywords": ["wf-iot", "world forum"]
+          "keywords": ["wf-iot", "world forum iot", "ieee wf-iot"],
+          "description": "物联网世界论坛"
         },
         {
           "name": "ACM Conference on Computer and Communications Security",
           "abbreviation": "CCS",
           "publisher": "ACM",
-          "keywords": ["ccs", "computer communications security"]
-        },
-        {
-          "name": "IEEE Symposium on Security and Privacy",
-          "abbreviation": "S&P",
-          "publisher": "IEEE",
-          "keywords": ["security and privacy", "oakland"]
+          "keywords": ["ccs", "computer communications security", "acm ccs"],
+          "description": "网络安全顶级会议"
         },
         {
           "name": "Network and Distributed System Security Symposium",
           "abbreviation": "NDSS",
           "publisher": "Internet Society",
-          "keywords": ["ndss", "network distributed security"]
+          "keywords": ["ndss", "network distributed security", "ndss symposium"],
+          "description": "网络安全顶级会议"
+        },
+        {
+          "name": "IEEE Symposium on Security and Privacy",
+          "abbreviation": "S&P",
+          "publisher": "IEEE",
+          "keywords": ["s&p", "oakland", "ieee security privacy", "sp symposium"],
+          "description": "安全隐私顶级会议"
+        },
+        {
+          "name": "USENIX Security Symposium",
+          "abbreviation": "USENIX-Security",
+          "publisher": "USENIX",
+          "keywords": ["usenix security", "security symposium", "usenix sec"],
+          "description": "安全顶级会议"
         }
       ]
     },
-    "tier2Journals": {
+    "tier2-journals": {
       "name": "二区期刊",
       "tier": 2,
       "venues": [
         {
-          "name": "IEEE Sensors Journal",
-          "abbreviation": "Sensors-J",
+          "name": "IEEE Internet of Things Magazine",
+          "abbreviation": "IoT-Mag",
           "publisher": "IEEE",
-          "keywords": ["sensors journal"]
+          "keywords": ["iot magazine", "internet of things magazine", "ieee iot mag"],
+          "description": "物联网杂志"
         },
         {
-          "name": "IEEE Access",
-          "abbreviation": "Access",
+          "name": "IEEE Communications Letters",
+          "abbreviation": "CL",
           "publisher": "IEEE",
-          "keywords": ["ieee access"]
+          "keywords": ["communications letters", "ieee cl", "comml"],
+          "description": "通信快报"
+        },
+        {
+          "name": "IEEE Wireless Communications Letters",
+          "abbreviation": "WCL",
+          "publisher": "IEEE",
+          "keywords": ["wireless communications letters", "ieee wcl"],
+          "description": "无线通信快报"
         },
         {
           "name": "Sensors",
           "abbreviation": "Sensors",
           "publisher": "MDPI",
-          "keywords": ["sensors mdpi"]
-        },
-        {
-          "name": "Electronics",
-          "abbreviation": "Electronics",
-          "publisher": "MDPI",
-          "keywords": ["electronics mdpi"]
-        },
-        {
-          "name": "Wireless Communications and Mobile Computing",
-          "abbreviation": "WCMC",
-          "publisher": "Hindawi",
-          "keywords": ["wireless communications mobile"]
+          "keywords": ["sensors", "mdpi sensors", "sensors journal"],
+          "description": "传感器领域期刊"
         },
         {
           "name": "International Journal of Distributed Sensor Networks",
           "abbreviation": "IJDSN",
           "publisher": "SAGE",
-          "keywords": ["distributed sensor networks"]
+          "keywords": ["ijdsn", "distributed sensor networks", "sage ijdsn"],
+          "description": "分布式传感器网络期刊"
+        },
+        {
+          "name": "Wireless Communications and Mobile Computing",
+          "abbreviation": "WCMC",
+          "publisher": "Wiley",
+          "keywords": ["wcmc", "wireless communications mobile computing", "hindawi wcmc"],
+          "description": "无线通信与移动计算期刊"
         }
       ]
     },
-    "tier2Conferences": {
+    "tier2-conferences": {
       "name": "二区会议",
       "tier": 2,
       "venues": [
         {
-          "name": "IEEE International Conference on Communications",
-          "abbreviation": "ICC",
-          "publisher": "IEEE",
-          "keywords": ["icc", "international conference communications"]
-        },
-        {
           "name": "IEEE Global Communications Conference",
           "abbreviation": "GLOBECOM",
           "publisher": "IEEE",
-          "keywords": ["globecom", "global communications"]
+          "keywords": ["globecom", "global communications", "ieee globecom"],
+          "description": "全球通信大会"
+        },
+        {
+          "name": "IEEE International Conference on Communications",
+          "abbreviation": "ICC",
+          "publisher": "IEEE",
+          "keywords": ["icc", "international conference communications", "ieee icc"],
+          "description": "国际通信会议"
         },
         {
           "name": "IEEE Vehicular Technology Conference",
           "abbreviation": "VTC",
           "publisher": "IEEE",
-          "keywords": ["vtc", "vehicular technology"]
+          "keywords": ["vtc", "vehicular technology", "ieee vtc"],
+          "description": "车载技术会议"
         },
         {
           "name": "IEEE International Conference on Pervasive Computing and Communications",
           "abbreviation": "PerCom",
           "publisher": "IEEE",
-          "keywords": ["percom", "pervasive computing"]
+          "keywords": ["percom", "pervasive computing", "ieee percom"],
+          "description": "普适计算会议"
         },
         {
           "name": "IEEE International Performance Computing and Communications Conference",
           "abbreviation": "IPCCC",
           "publisher": "IEEE",
-          "keywords": ["ipccc", "performance computing"]
+          "keywords": ["ipccc", "performance computing communications", "ieee ipccc"],
+          "description": "性能计算与通信会议"
         }
       ]
-    }
-  },
-  "tierDefinitions": {
-    "1": {
-      "label": "顶级 (Top Tier)",
-      "description": "领域内公认的顶级期刊和会议，CCF A类或同等水平",
-      "color": "#d4af37",
-      "score": 100
-    },
-    "2": {
-      "label": "优秀 (Tier 2)",
-      "description": "高质量期刊和会议，CCF B类或同等水平",
-      "color": "#c0c0c0",
-      "score": 80
-    },
-    "3": {
-      "label": "良好 (Tier 3)",
-      "description": "有一定影响力的期刊和会议，CCF C类",
-      "color": "#cd7f32",
-      "score": 60
-    },
-    "0": {
-      "label": "其他 (Other)",
-      "description": "未在白名单中或新出现的期刊/会议",
-      "color": "#808080",
-      "score": 40
     }
   },
   "researchKeywords": [
@@ -305,74 +339,74 @@
     "iot",
     "sensor network",
     "wireless sensor",
+    "wsn",
     "edge computing",
     "fog computing",
+    "cloud computing",
+    "distributed system",
+    "mobile computing",
     "pervasive computing",
     "ubiquitous computing",
-    "smart sensing",
+    "smart city",
+    "smart home",
     "industrial iot",
     "iiot",
     "cyber-physical system",
     "cps",
-    "smart city",
-    "smart home",
-    "wearable",
-    "rfid",
-    "localization",
-    "tracking",
-    "context-aware",
-    "activity recognition",
-    "mobile sensing",
-    "crowdsensing",
-    "participatory sensing",
-    "data fusion",
-    "sensor fusion",
-    "signal processing",
-    "compressive sensing",
-    "sparse representation",
-    "machine learning",
-    "deep learning",
-    "federated learning",
-    "distributed learning",
-    "reinforcement learning",
-    "anomaly detection",
-    "fault detection",
-    "time series",
-    "stream processing",
-    "real-time",
+    "embedded system",
+    "real-time system",
     "low power",
-    "energy harvesting",
-    "duty cycling",
-    "wake-up radio",
-    "backscatter",
-    "visible light communication",
-    "vlc",
-    "lora",
-    "loraWAN",
-    "nb-iot",
+    "energy efficient",
+    "power management",
+    "wireless communication",
     "5g",
     "6g",
-    "wireless communication",
-    "protocol",
-    "routing",
+    "lpwan",
+    "lora",
+    "nb-iot",
+    "zigbee",
+    "bluetooth",
+    "wifi",
+    "routing protocol",
     "mac protocol",
-    "tdma",
-    "csma",
-    "scheduling",
-    "resource allocation",
-    "qos",
-    "quality of service",
+    "data aggregation",
+    "data fusion",
+    "localization",
+    "tracking",
+    "target tracking",
+    "object detection",
+    "anomaly detection",
+    "fault detection",
     "security",
     "privacy",
     "authentication",
     "encryption",
     "blockchain",
-    "trust management",
-    "intrusion detection",
+    "machine learning",
+    "deep learning",
+    "federated learning",
+    "reinforcement learning",
+    "neural network",
+    "cnn",
+    "rnn",
+    "transformer",
+    "data mining",
+    "big data",
+    "stream processing",
+    "complex event processing",
     "digital twin",
     "metaverse",
-    "digitalization",
-    "industry 4.0",
-    "industry 5.0"
+    "augmented reality",
+    "virtual reality",
+    "human-computer interaction",
+    "context-aware",
+    "location-aware",
+    "activity recognition",
+    "gesture recognition",
+    "speech recognition",
+    "natural language processing",
+    "computer vision",
+    "image processing",
+    "video analytics"
   ]
 }
