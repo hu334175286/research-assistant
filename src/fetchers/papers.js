@@ -84,6 +84,9 @@ class PaperFetcher {
           primaryCategory: this.extractAttribute(entry, 'arxiv:primary_category', 'term'),
           categories: this.extractCategories(entry),
           link: this.extractLink(entry),
+          comments: this.extractTag(entry, 'arxiv:comment'),  // 提取arXiv评论（常含venue信息）
+          journalRef: this.extractTag(entry, 'arxiv:journal_ref'),  // 提取期刊引用信息
+          doi: this.extractTag(entry, 'arxiv:doi'),  // 提取DOI
           source: 'arXiv',
           fetchedAt: new Date().toISOString()
         };
@@ -181,14 +184,30 @@ class PaperFetcher {
     console.log(`[PaperFetcher] 开始评估 ${papers.length} 篇论文...`);
 
     // 使用 venueMatcher 评估所有论文
-    const evaluated = venueMatcher.evaluatePapers(papers.map(p => ({
-      title: p.title,
-      venue: p.primaryCategory || 'arXiv',
-      abstract: p.summary,
-      authors: p.authors,
-      comments: p.comments,  // arXiv的journal-ref信息
-      ...p
-    })));
+    // 优先从journalRef和comments中提取venue信息
+    const evaluated = venueMatcher.evaluatePapers(papers.map(p => {
+      // 尝试从journalRef或comments中提取venue
+      let extractedVenue = null;
+      if (p.journalRef) {
+        const match = venueMatcher.extractAndMatch(p.journalRef);
+        if (match) extractedVenue = match.name;
+      }
+      if (!extractedVenue && p.comments) {
+        const match = venueMatcher.extractAndMatch(p.comments);
+        if (match) extractedVenue = match.name;
+      }
+      
+      return {
+        title: p.title,
+        venue: extractedVenue || p.primaryCategory || 'arXiv',
+        abstract: p.summary,
+        authors: p.authors,
+        comments: p.comments,
+        journalRef: p.journalRef,
+        doi: p.doi,
+        ...p
+      };
+    }));
 
     // 过滤
     let filtered = evaluated.filter(item => {
