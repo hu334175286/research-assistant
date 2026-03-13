@@ -209,6 +209,7 @@ class PaperFetcher {
             confidence,
             matchType: classification.best.matchType,
             extractionMode: classification.best.extractionMode || 'direct',
+            canonicalVenue: classification.best.venueInfo?.name || '',
             tier: classification.tier,
             isTopVenue: classification.isTopVenue,
             reasonCodes: classification.reasonCodes || []

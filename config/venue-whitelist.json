@@ -63,7 +63,17 @@
       "symposium",
       "transactions",
       "proceedings"
-    ]
+    ],
+    "canonicalReplacements": {
+      "ieee and acm": "ieee/acm",
+      "acm and ieee": "acm/ieee",
+      "internet of thing": "internet of things",
+      "symp": "symposium",
+      "trans": "transactions",
+      "intl": "international",
+      "conf": "conference",
+      "proc": "proceedings"
+    }
   },
   "categories": {
     "top-journals": {
@@ -73,6 +83,7 @@
         {
           "name": "IEEE Internet of Things Journal",
           "abbreviation": "IoT-J",
+          "aliases": ["IEEE IoT Journal", "IEEE IoTJ"],
           "publisher": "IEEE",
           "keywords": ["iot-j", "internet of things journal", "ieee internet of things"],
           "description": "物联网领域顶级期刊"
@@ -276,7 +287,7 @@
         {
           "name": "IEEE Symposium on Security and Privacy",
           "abbreviation": "S&P",
-          "aliases": ["IEEE S and P", "IEEE SP", "Oakland"],
+          "aliases": ["IEEE S and P", "IEEE SP", "Oakland", "IEEE Security and Privacy Symposium"],
           "publisher": "IEEE",
           "keywords": ["s&p", "oakland", "ieee security privacy", "sp symposium"],
           "description": "安全隐私顶级会议"

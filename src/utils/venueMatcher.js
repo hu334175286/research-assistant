@@ -39,13 +39,33 @@ class VenueMatcher {
    * 文本归一化：小写、去标点、压缩空白
    */
   normalizeText(text = '') {
-    return String(text)
+    const normalized = String(text)
       .toLowerCase()
       .normalize('NFKD')
       .replace(/[\u2013\u2014]/g, '-')
       .replace(/[^a-z0-9&+\-\s/]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
+
+    return this.applyCanonicalReplacements(normalized);
+  }
+
+  applyCanonicalReplacements(text = '') {
+    if (!text) return '';
+
+    const replacements = this.rules?.canonicalReplacements || {};
+    let output = text;
+
+    for (const [rawFrom, rawTo] of Object.entries(replacements)) {
+      const from = String(rawFrom || '').trim().toLowerCase();
+      const to = String(rawTo || '').trim().toLowerCase();
+      if (!from || !to) continue;
+
+      const pattern = new RegExp(`(^|\\s)${this.escapeRegExp(from)}(?=\\s|$)`, 'g');
+      output = output.replace(pattern, (_, prefix) => `${prefix}${to}`);
+    }
+
+    return output.replace(/\s+/g, ' ').trim();
   }
 
   /**

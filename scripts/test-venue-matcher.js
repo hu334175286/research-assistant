@@ -32,6 +32,7 @@ const testCases = [
   { input: 'IEEE INFOCOM', expected: 'INFOCOM' },
   { input: 'ACM MobiCom 2024', expected: 'MobiCom' },
   { input: 'IEEE Internet of Things Journal', expected: 'IoT-J' },
+  { input: 'IEEE IoTJ', expected: 'IoT-J' },
   { input: 'ACM SenSys', expected: 'SenSys' },
   { input: 'IEEE Transactions on Mobile Computing', expected: 'TMC' },
   { input: 'Proc. IEEE INFOCOM 2005', expected: 'INFOCOM' },
