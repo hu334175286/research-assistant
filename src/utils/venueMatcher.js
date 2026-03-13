@@ -12,6 +12,7 @@ class VenueMatcher {
     this.rules = null;
     this.venueMap = new Map(); // 归一化名称 -> venue
     this.keywordMap = new Map(); // 关键词到venue的映射
+    this.keywordMeta = new Map(); // 关键词质量信息
     this.abbrRegexList = []; // 缩写正则，避免子串误匹配
     this.loadWhitelist();
   }
@@ -62,6 +63,7 @@ class VenueMatcher {
 
     this.venueMap.clear();
     this.keywordMap.clear();
+    this.keywordMeta.clear();
     this.abbrRegexList = [];
 
     for (const [categoryKey, category] of Object.entries(this.whitelist.categories)) {
@@ -106,6 +108,14 @@ class VenueMatcher {
               this.keywordMap.set(keywordNorm, []);
             }
             this.keywordMap.get(keywordNorm).push(venueEntry);
+
+            if (!this.keywordMeta.has(keywordNorm)) {
+              const tokens = keywordNorm.split(/\s+/).filter(Boolean);
+              this.keywordMeta.set(keywordNorm, {
+                length: keywordNorm.length,
+                tokenCount: tokens.length
+              });
+            }
           }
         }
       }
@@ -125,6 +135,25 @@ class VenueMatcher {
     }
 
     return cleaned.replace(/\s+/g, ' ').trim();
+  }
+
+  isKeywordReliable(keyword = '', mappedVenues = []) {
+    const meta = this.keywordMeta.get(keyword) || { length: keyword.length, tokenCount: keyword.split(/\s+/).filter(Boolean).length };
+    const genericTokens = new Set(this.rules?.genericTokens || [
+      'conference', 'journal', 'ieee', 'acm', 'international', 'symposium', 'transactions', 'proceedings'
+    ]);
+
+    // 映射到多个 venue 且关键词过短时，判定不可靠
+    if (mappedVenues.length > 1 && meta.length < 10 && meta.tokenCount <= 2) {
+      return false;
+    }
+
+    // 单词关键词过短且过于泛化，容易误报
+    if (meta.tokenCount === 1 && meta.length <= 5 && genericTokens.has(keyword)) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -202,7 +231,16 @@ class VenueMatcher {
 
       // 3. 关键词匹配（按关键词长度优先）
       for (const [keyword, venues] of keywordEntries) {
-        if (candidate.value.includes(keyword)) {
+        if (!this.isKeywordReliable(keyword, venues)) {
+          continue;
+        }
+
+        const meta = this.keywordMeta.get(keyword) || { tokenCount: 1 };
+        const matched = meta.tokenCount === 1
+          ? new RegExp(`(^|[^a-z0-9])${this.escapeRegExp(keyword)}([^a-z0-9]|$)`, 'i').test(candidate.value)
+          : candidate.value.includes(keyword);
+
+        if (matched) {
           return {
             venue: venues[0],
             matchedBy: 'keyword',

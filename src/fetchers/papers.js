@@ -13,6 +13,7 @@ class PaperFetcher {
     this.dataDir = path.join(__dirname, '../../data');
     this.papersFile = path.join(this.dataDir, 'papers.json');
     this.historyFile = path.join(this.dataDir, 'fetch-history.json');
+    this.venueSummaryFile = path.join(this.dataDir, 'venue-recognition-summary.json');
   }
 
   /**
@@ -316,6 +317,14 @@ class PaperFetcher {
     return merged;
   }
 
+  async saveVenueSummary(summary) {
+    try {
+      await fs.writeFile(this.venueSummaryFile, JSON.stringify(summary, null, 2));
+    } catch (error) {
+      console.warn('[PaperFetcher] 保存venue识别摘要失败:', error.message);
+    }
+  }
+
   /**
    * 记录抓取历史
    */
@@ -357,6 +366,25 @@ class PaperFetcher {
       
       // 2. 评估和过滤
       const evaluated = this.evaluateAndFilter(rawPapers, options.filter);
+
+      const venueSummary = {
+        generatedAt: new Date().toISOString(),
+        fetched: rawPapers.length,
+        retained: evaluated.length,
+        matched: evaluated.filter(p => p.venueRecognition?.matched).length,
+        topVenue: evaluated.filter(p => p.venueRecognition?.isTopVenue).length,
+        tierDistribution: {
+          tier1: evaluated.filter(p => p.venueInfo?.tier === 1).length,
+          tier2: evaluated.filter(p => p.venueInfo?.tier === 2).length,
+          other: evaluated.filter(p => !p.venueInfo || p.venueInfo?.tier === 0).length
+        },
+        sourceDistribution: evaluated.reduce((acc, p) => {
+          const src = p.venueRecognition?.source || 'fallback';
+          acc[src] = (acc[src] || 0) + 1;
+          return acc;
+        }, {})
+      };
+      await this.saveVenueSummary(venueSummary);
       
       // 3. 加载已有论文
       const existing = await this.loadSavedPapers();
@@ -383,6 +411,7 @@ class PaperFetcher {
         total: merged.length,
         highPriority: evaluated.filter(p => p.priority === 'HIGH').length,
         mediumPriority: evaluated.filter(p => p.priority === 'MEDIUM').length,
+        venueSummary,
         duration: Date.now() - startTime
       };
     } catch (error) {

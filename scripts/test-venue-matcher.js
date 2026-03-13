@@ -37,17 +37,22 @@ const testCases = [
   { input: 'Proc. IEEE INFOCOM 2005', expected: 'INFOCOM' },
   { input: 'Proceedings of ACM CCS 2023', expected: 'CCS' },
   { input: 'IEEE ICC', expected: 'ICC' },
-  { input: 'Unknown Conference', expected: null }
+  { input: 'Unknown Conference', expected: null },
+  { input: 'International Conference on Advanced Networks', expected: null },
+  { input: 'IEEE Journal', expected: null }
 ];
 
 for (const test of testCases) {
   const detailed = venueMatcher.matchDetailed(test.input);
   const result = detailed ? detailed.venue : null;
-  const status = result ? '✅' : (test.expected ? '❌' : '✅');
+  const matchedAbbr = result ? result.abbreviation : null;
+  const passed = matchedAbbr === test.expected;
+  const status = passed ? '✅' : '❌';
   const matched = result ? result.abbreviation : '未匹配';
   const tier = result ? `(Tier ${result.tier})` : '';
   const confidence = detailed ? `, conf=${detailed.confidence.toFixed(2)}, by=${detailed.matchedBy}` : '';
-  console.log(`${status} "${test.input}" -> ${matched} ${tier}${confidence}`);
+  const expectText = test.expected || '未匹配';
+  console.log(`${status} "${test.input}" -> ${matched} ${tier}${confidence} | 期望: ${expectText}`);
 }
 console.log();
 

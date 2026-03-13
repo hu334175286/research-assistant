@@ -29,7 +29,17 @@
       "\\b(proc|proceedings|in proceedings of|to appear in|presented at|accepted by|published in)\\b"
     ],
     "tokenSplitRegex": "[^a-z0-9&+\\\\-/]+",
-    "maxNgram": 8
+    "maxNgram": 8,
+    "genericTokens": [
+      "conference",
+      "journal",
+      "ieee",
+      "acm",
+      "international",
+      "symposium",
+      "transactions",
+      "proceedings"
+    ]
   },
   "categories": {
     "top-journals": {
