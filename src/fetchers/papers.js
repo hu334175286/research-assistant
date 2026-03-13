@@ -14,6 +14,7 @@ class PaperFetcher {
     this.papersFile = path.join(this.dataDir, 'papers.json');
     this.historyFile = path.join(this.dataDir, 'fetch-history.json');
     this.venueSummaryFile = path.join(this.dataDir, 'venue-recognition-summary.json');
+    this.unmatchedVenueSignalsFile = path.join(this.dataDir, 'venue-unmatched-signals.json');
   }
 
   /**
@@ -256,6 +257,11 @@ class PaperFetcher {
       };
     });
 
+    this.lastEvaluationDiagnostics = {
+      evaluatedCount: evaluated.length,
+      unmatchedSignals: this.buildUnmatchedVenueSignals(evaluated)
+    };
+
     // 过滤
     let filtered = evaluated.filter(item => {
       // 检查等级要求（tier: 1顶级 > 2二区 > 0未知）
@@ -374,6 +380,70 @@ class PaperFetcher {
     }
   }
 
+  buildUnmatchedVenueSignals(evaluatedPapers = []) {
+    const signalMap = new Map();
+    const sourceFields = ['journalRef', 'comments', 'venue'];
+    const candidatePattern = /(conference|journal|symposium|transactions|workshop|proceedings|letters|magazine|security|network|computing|communication)/i;
+
+    const normalizeSignal = (text = '') => String(text)
+      .toLowerCase()
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/\b(19|20)\d{2}\b/g, ' ')
+      .replace(/\b(vol|volume|no|issue|pp|pages|doi)\b[^,;]*/gi, ' ')
+      .replace(/[^a-z0-9&+\-/\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    for (const item of evaluatedPapers) {
+      const recognition = item.venueRecognition || {};
+      if (recognition.matched) continue;
+
+      for (const field of sourceFields) {
+        const raw = item[field];
+        if (!raw) continue;
+        if (!candidatePattern.test(raw)) continue;
+
+        const normalized = normalizeSignal(raw);
+        if (!normalized || normalized.length < 8) continue;
+
+        const key = `${field}:${normalized}`;
+        const exists = signalMap.get(key) || {
+          source: field,
+          signal: normalized,
+          count: 0,
+          samples: []
+        };
+
+        exists.count += 1;
+        if (exists.samples.length < 3) {
+          exists.samples.push({
+            title: item.title,
+            raw: String(raw).slice(0, 200)
+          });
+        }
+
+        signalMap.set(key, exists);
+      }
+    }
+
+    return [...signalMap.values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 100);
+  }
+
+  async saveUnmatchedVenueSignals(signals = []) {
+    try {
+      const payload = {
+        generatedAt: new Date().toISOString(),
+        count: signals.length,
+        signals
+      };
+      await fs.writeFile(this.unmatchedVenueSignalsFile, JSON.stringify(payload, null, 2));
+    } catch (error) {
+      console.warn('[PaperFetcher] 保存未识别venue信号失败:', error.message);
+    }
+  }
+
   /**
    * 记录抓取历史
    */
@@ -440,6 +510,7 @@ class PaperFetcher {
         }, {})
       };
       await this.saveVenueSummary(venueSummary);
+      await this.saveUnmatchedVenueSignals(this.lastEvaluationDiagnostics?.unmatchedSignals || []);
       
       // 3. 加载已有论文
       const existing = await this.loadSavedPapers();
@@ -456,6 +527,7 @@ class PaperFetcher {
         fetched: rawPapers.length,
         newPapers: evaluated.length,
         total: merged.length,
+        unmatchedVenueSignals: this.lastEvaluationDiagnostics?.unmatchedSignals?.length || 0,
         duration: Date.now() - startTime
       });
 
@@ -467,6 +539,7 @@ class PaperFetcher {
         highPriority: evaluated.filter(p => p.priority === 'HIGH').length,
         mediumPriority: evaluated.filter(p => p.priority === 'MEDIUM').length,
         venueSummary,
+        unmatchedVenueSignals: this.lastEvaluationDiagnostics?.unmatchedSignals?.length || 0,
         duration: Date.now() - startTime
       };
     } catch (error) {
