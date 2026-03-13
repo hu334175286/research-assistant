@@ -300,15 +300,17 @@ class VenueMatcher {
         }
       }
 
-      // 4. 模糊包含匹配（仅对较长名字启用，减少误匹配）
-      for (const [name, venue] of this.venueMap) {
-        if (name.length >= 6 && (candidate.value.includes(name) || name.includes(candidate.value))) {
-          return {
-            venue,
-            matchedBy: 'fuzzy',
-            matchedText: name,
-            confidence: Math.max(0, 0.7 - confidencePenalty)
-          };
+      // 4. 模糊包含匹配（仅对较长候选和较长名字启用，减少误匹配）
+      if (candidate.value.length >= 4) {
+        for (const [name, venue] of this.venueMap) {
+          if (name.length >= 6 && (candidate.value.includes(name) || name.includes(candidate.value))) {
+            return {
+              venue,
+              matchedBy: 'fuzzy',
+              matchedText: name,
+              confidence: Math.max(0, 0.7 - confidencePenalty)
+            };
+          }
         }
       }
     }

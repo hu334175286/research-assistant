@@ -187,11 +187,12 @@ class PaperFetcher {
 
     // 使用 venueMatcher 评估所有论文
     // 优先从journalRef和comments中提取venue信息
-    const evaluated = venueMatcher.evaluatePapers(papers.map(p => {
+    const evaluatedRaw = venueMatcher.evaluatePapers(papers.map(p => {
       const classification = venueMatcher.classifyVenue([
         { name: 'journalRef', text: p.journalRef, weight: 1.0 },
         { name: 'comments', text: p.comments, weight: 0.95 },
-        { name: 'venue', text: p.venue, weight: 0.9 }
+        { name: 'venue', text: p.venue, weight: 0.9 },
+        { name: 'primaryCategory', text: p.primaryCategory, weight: 0.5 }
       ]);
 
       const recognition = classification.matched
@@ -230,6 +231,18 @@ class PaperFetcher {
         recognizedIsTopVenue: !!classification.isTopVenue
       };
     }));
+
+    const evaluated = evaluatedRaw.map((item) => {
+      const basePaper = item.paper || {};
+      return {
+        ...item,
+        venueRecognition: item.venueRecognition || basePaper.venueRecognition,
+        venueEvidence: item.venueEvidence || basePaper.venueEvidence,
+        recognizedVenueTier: item.recognizedVenueTier || basePaper.recognizedVenueTier || item.venueInfo?.tier || 0,
+        recognizedIsTopVenue: item.recognizedIsTopVenue || basePaper.recognizedIsTopVenue || item.venueInfo?.tier === 1,
+        venueRecognitionCandidates: item.venueRecognitionCandidates || basePaper.venueRecognitionCandidates || []
+      };
+    });
 
     // 过滤
     let filtered = evaluated.filter(item => {

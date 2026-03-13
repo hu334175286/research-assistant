@@ -54,6 +54,8 @@ class PaperFilter {
       base.venue ||
       'Unknown';
 
+    const recognition = paper.venueRecognition || base.venueRecognition || {};
+
     return {
       raw: paper,
       id: base.id || paper.id,
@@ -67,11 +69,11 @@ class PaperFilter {
       qualityScore,
       relevant: !!paper.relevance?.relevant,
       matchedKeywords: paper.relevance?.matchedKeywords || [],
-      venueMatched: !!paper.venueRecognition?.matched,
-      venueConfidence: paper.venueRecognition?.confidence || 0,
-      venueSource: paper.venueRecognition?.source || 'fallback',
-      venueMatchType: paper.venueRecognition?.matchType || 'none',
-      venueReasonCodes: paper.venueRecognition?.reasonCodes || []
+      venueMatched: !!recognition.matched,
+      venueConfidence: recognition.confidence || 0,
+      venueSource: recognition.source || 'fallback',
+      venueMatchType: recognition.matchType || 'none',
+      venueReasonCodes: recognition.reasonCodes || []
     };
   }
 

@@ -98,27 +98,31 @@ class ProgressReporter {
         .filter(p => p.priority === 'MEDIUM')
         .slice(0, Math.max(0, maxPapers - highPriority.length));
 
-      report.highlights = [...highPriority, ...mediumPriority].map(p => ({
-        title: p.paper?.title || p.title,
-        authors: (p.paper?.authors || p.authors || []).slice(0, 3).join(', ') + 
-                 ((p.paper?.authors || p.authors || []).length > 3 ? ' et al.' : ''),
-        venue: p.venueInfo?.name || p.paper?.venue || 'Unknown',
-        venueAbbreviation: p.venueInfo?.abbreviation || '',
-        venueTier: p.venueInfo?.tier || 0,
-        venueTierLabel: p.venueInfo?.tierLabel || '',
-        venueTierScore: p.venueInfo?.tierScore || 0,
-        priority: p.priority,
-        qualityScore: p.qualityScore,
-        recommendation: p.recommendation,
-        link: p.paper?.link || p.link,
-        matchedKeywords: p.relevance?.matchedKeywords?.slice(0, 5) || [],
-        relevanceScore: p.relevance?.score || 0,
-        recognitionMatched: !!p.venueRecognition?.matched,
-        recognitionConfidence: p.venueRecognition?.confidence || 0,
-        recognitionSource: p.venueEvidence?.source || p.venueRecognition?.source || '',
-        recognitionMatchType: p.venueEvidence?.matchType || p.venueRecognition?.matchType || '',
-        published: p.paper?.published
-      }));
+      report.highlights = [...highPriority, ...mediumPriority].map(p => {
+        const recognition = p.venueRecognition || p.paper?.venueRecognition || {};
+        const evidence = p.venueEvidence || p.paper?.venueEvidence || {};
+        return {
+          title: p.paper?.title || p.title,
+          authors: (p.paper?.authors || p.authors || []).slice(0, 3).join(', ') + 
+                   ((p.paper?.authors || p.authors || []).length > 3 ? ' et al.' : ''),
+          venue: p.venueInfo?.name || p.paper?.venue || 'Unknown',
+          venueAbbreviation: p.venueInfo?.abbreviation || '',
+          venueTier: p.venueInfo?.tier || p.recognizedVenueTier || p.paper?.recognizedVenueTier || 0,
+          venueTierLabel: p.venueInfo?.tierLabel || '',
+          venueTierScore: p.venueInfo?.tierScore || 0,
+          priority: p.priority,
+          qualityScore: p.qualityScore,
+          recommendation: p.recommendation,
+          link: p.paper?.link || p.link,
+          matchedKeywords: p.relevance?.matchedKeywords?.slice(0, 5) || [],
+          relevanceScore: p.relevance?.score || 0,
+          recognitionMatched: !!recognition.matched,
+          recognitionConfidence: recognition.confidence || 0,
+          recognitionSource: evidence.source || recognition.source || '',
+          recognitionMatchType: evidence.matchType || recognition.matchType || '',
+          published: p.paper?.published
+        };
+      });
     }
 
     // 3. 详细统计
@@ -162,7 +166,7 @@ class ProgressReporter {
   countByTier(papers) {
     const counts = { 1: 0, 2: 0, 0: 0 };
     for (const paper of papers) {
-      const tier = paper.venueInfo?.tier || 0;
+      const tier = paper.venueInfo?.tier || paper.recognizedVenueTier || paper.paper?.recognizedVenueTier || paper.paper?.venueRecognition?.tier || 0;
       counts[tier] = (counts[tier] || 0) + 1;
     }
     return {
