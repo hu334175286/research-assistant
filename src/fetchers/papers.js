@@ -197,6 +197,7 @@ class PaperFetcher {
         { name: 'journalRef', text: p.journalRef, weight: sourceWeights.journalRef || 1.0 },
         { name: 'comments', text: p.comments, weight: sourceWeights.comments || 0.95 },
         { name: 'venue', text: p.venue, weight: sourceWeights.venue || 0.9 },
+        { name: 'title', text: p.title, weight: sourceWeights.title || 0.35 },
         { name: 'primaryCategory', text: p.primaryCategory, weight: sourceWeights.primaryCategory || 0.5 }
       ]);
 
@@ -307,7 +308,7 @@ class PaperFetcher {
     const tierCounts = { 1: 0, 2: 0, 0: 0 };
     const priorityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0, NONE: 0 };
     const recognitionCounts = { matched: 0, unmatched: 0, highConfidence: 0 };
-    const recognitionSourceCounts = { journalRef: 0, comments: 0, venue: 0, fallback: 0 };
+    const recognitionSourceCounts = { journalRef: 0, comments: 0, venue: 0, title: 0, primaryCategory: 0, fallback: 0 };
 
     for (const item of filtered) {
       const tier = item.venueInfo?.tier || 0;
@@ -331,7 +332,7 @@ class PaperFetcher {
     console.log(`[PaperFetcher] 等级分布: 顶级=${tierCounts[1]}, 二区=${tierCounts[2]}, 其他=${tierCounts[0]}`);
     console.log(`[PaperFetcher] 优先级分布: 高=${priorityCounts.HIGH}, 中=${priorityCounts.MEDIUM}, 低=${priorityCounts.LOW}`);
     console.log(`[PaperFetcher] Venue识别: 命中=${recognitionCounts.matched}, 高置信=${recognitionCounts.highConfidence}, 未命中=${recognitionCounts.unmatched}`);
-    console.log(`[PaperFetcher] Venue识别来源: journalRef=${recognitionSourceCounts.journalRef}, comments=${recognitionSourceCounts.comments}, venue=${recognitionSourceCounts.venue}, fallback=${recognitionSourceCounts.fallback}`);
+    console.log(`[PaperFetcher] Venue识别来源: journalRef=${recognitionSourceCounts.journalRef}, comments=${recognitionSourceCounts.comments}, venue=${recognitionSourceCounts.venue}, title=${recognitionSourceCounts.title}, primaryCategory=${recognitionSourceCounts.primaryCategory}, fallback=${recognitionSourceCounts.fallback}`);
     
     return filtered;
   }

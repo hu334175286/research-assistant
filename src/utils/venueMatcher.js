@@ -75,6 +75,27 @@ class VenueMatcher {
     return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  buildAbbreviationVariants(abbr = '') {
+    const raw = String(abbr || '').trim();
+    if (!raw) return [];
+
+    const variants = new Set();
+    const normalized = this.normalizeText(raw);
+    if (normalized) variants.add(normalized);
+
+    // 去除常见分隔符后的紧凑形式（如 iot-j -> iotj, s&p -> sp）
+    const compact = normalized.replace(/[^a-z0-9]/g, '');
+    if (compact.length >= 2) variants.add(compact);
+
+    // 斜杠连接形式（如 ieee/acm ton）
+    if (normalized.includes('/')) {
+      variants.add(normalized.replace(/\//g, ' '));
+      variants.add(normalized.replace(/\//g, ''));
+    }
+
+    return [...variants].filter(Boolean);
+  }
+
   /**
    * 构建快速查找索引
    */
@@ -100,7 +121,8 @@ class VenueMatcher {
         const names = [
           venue.name,
           venue.abbreviation,
-          ...(venue.aliases || [])
+          ...(venue.aliases || []),
+          ...this.buildAbbreviationVariants(venue.abbreviation)
         ]
           .filter(Boolean)
           .map((s) => this.normalizeText(s));
@@ -119,8 +141,13 @@ class VenueMatcher {
         }
 
         // 建立关键词索引
-        if (venue.keywords) {
-          for (const keyword of venue.keywords) {
+        const keywordCandidates = [
+          ...(venue.keywords || []),
+          ...this.buildAbbreviationVariants(venue.abbreviation)
+        ];
+
+        if (keywordCandidates.length) {
+          for (const keyword of keywordCandidates) {
             const keywordNorm = this.normalizeText(keyword);
             if (!keywordNorm) continue;
             if (!this.keywordMap.has(keywordNorm)) {
@@ -169,6 +196,7 @@ class VenueMatcher {
       journalRef: 1,
       comments: 0.95,
       venue: 0.9,
+      title: 0.35,
       primaryCategory: 0.5
     };
   }

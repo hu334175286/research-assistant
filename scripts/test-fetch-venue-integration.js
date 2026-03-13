@@ -86,6 +86,30 @@ async function main() {
   );
 
   // 低置信度命中拒绝分支（minVenueConfidence）
+  const titleSignalPapers = [
+    {
+      id: 'title-1',
+      title: '[INFOCOM 2026] Distributed Scheduling for Edge-Cloud IoT',
+      summary: 'resource scheduling for iot',
+      authors: ['E'],
+      journalRef: '',
+      comments: '',
+      primaryCategory: 'cs.NI',
+      source: 'arXiv'
+    }
+  ];
+
+  const titleSignal = fetcher.evaluateAndFilter(titleSignalPapers, {
+    minTier: 0,
+    includeArXivOnly: false,
+    minVenueConfidence: 0.8
+  });
+
+  assert.strictEqual(titleSignal.length, 1, 'title 信号样本应被评估保留');
+  const titlePaper = titleSignal[0].paper || titleSignal[0];
+  assert.strictEqual(titlePaper.venueRecognition?.matched, true, 'title 中的 INFOCOM 应能命中');
+  assert.strictEqual(titlePaper.venueRecognition?.source, 'title', 'title 信号应记录为 title 来源');
+
   const lowConfidencePapers = [
     {
       id: '3',

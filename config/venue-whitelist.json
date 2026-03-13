@@ -34,6 +34,7 @@
       "journalRef": 1,
       "comments": 0.95,
       "venue": 0.9,
+      "title": 0.35,
       "primaryCategory": 0.5
     },
     "negativeSignals": {
