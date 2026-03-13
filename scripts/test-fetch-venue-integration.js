@@ -75,6 +75,15 @@ async function main() {
     ['exact', 'abbreviation'].includes(noisyPaper.venueRecognition?.matchType),
     `期望噪声文本保留 exact/abbreviation 匹配类型，实际为 ${noisyPaper.venueRecognition?.matchType}`
   );
+  assert.ok(
+    ['direct', 'phrase'].includes(noisyPaper.venueRecognition?.extractionMode),
+    `噪声文本 extractionMode 异常: ${noisyPaper.venueRecognition?.extractionMode}`
+  );
+  assert.strictEqual(
+    noisyPaper.venueEvidence?.extractionMode,
+    noisyPaper.venueRecognition?.extractionMode,
+    'venue证据与识别结果的 extractionMode 应一致'
+  );
 
   // 低置信度命中拒绝分支（minVenueConfidence）
   const lowConfidencePapers = [

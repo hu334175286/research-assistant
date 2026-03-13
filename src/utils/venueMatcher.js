@@ -586,6 +586,7 @@ class VenueMatcher {
             raw: best.raw,
             extractedVenue: best.extractedVenue,
             matchType: best.matchType,
+            extractionMode: best.extractionMode,
             confidence: best.confidence
           }
         : null,

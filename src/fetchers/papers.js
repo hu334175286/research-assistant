@@ -208,6 +208,7 @@ class PaperFetcher {
             source: classification.best.source,
             confidence,
             matchType: classification.best.matchType,
+            extractionMode: classification.best.extractionMode || 'direct',
             tier: classification.tier,
             isTopVenue: classification.isTopVenue,
             reasonCodes: classification.reasonCodes || []
@@ -217,6 +218,7 @@ class PaperFetcher {
             source: 'fallback',
             confidence,
             matchType: 'none',
+            extractionMode: 'none',
             tier: 0,
             isTopVenue: false,
             reasonCodes: classification.matched
