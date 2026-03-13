@@ -187,82 +187,34 @@ class PaperFetcher {
     // 使用 venueMatcher 评估所有论文
     // 优先从journalRef和comments中提取venue信息
     const evaluated = venueMatcher.evaluatePapers(papers.map(p => {
-      // 尝试从journalRef或comments中提取venue，并保留证据链
-      let extractedVenue = null;
-      let venueEvidence = null;
-      let recognition = { matched: false, source: 'fallback', confidence: 0, matchType: 'none' };
+      const classification = venueMatcher.classifyVenue([
+        { name: 'journalRef', text: p.journalRef, weight: 1.0 },
+        { name: 'comments', text: p.comments, weight: 0.95 },
+        { name: 'primaryCategory', text: p.primaryCategory, weight: 0.8 }
+      ]);
 
-      if (p.journalRef) {
-        const match = venueMatcher.extractAndMatch(p.journalRef);
-        if (match) {
-          extractedVenue = match.name;
-          venueEvidence = {
-            source: 'journalRef',
-            matchType: match.matchType,
-            extractedVenue: match.extractedVenue || match.abbreviation,
-            confidence: match.confidence || null,
-            raw: p.journalRef
-          };
-          recognition = {
+      const recognition = classification.matched
+        ? {
             matched: true,
-            source: 'journalRef',
-            confidence: match.confidence || 0,
-            matchType: match.matchType || 'unknown'
-          };
-        }
-      }
+            source: classification.best.source,
+            confidence: classification.best.confidence,
+            matchType: classification.best.matchType,
+            tier: classification.tier,
+            isTopVenue: classification.isTopVenue
+          }
+        : { matched: false, source: 'fallback', confidence: 0, matchType: 'none', tier: 0, isTopVenue: false };
 
-      if (!extractedVenue && p.comments) {
-        const match = venueMatcher.extractAndMatch(p.comments);
-        if (match) {
-          extractedVenue = match.name;
-          venueEvidence = {
-            source: 'comments',
-            matchType: match.matchType,
-            extractedVenue: match.extractedVenue || match.abbreviation,
-            confidence: match.confidence || null,
-            raw: p.comments
-          };
-          recognition = {
-            matched: true,
-            source: 'comments',
-            confidence: match.confidence || 0,
-            matchType: match.matchType || 'unknown'
-          };
-        }
-      }
-
-      // 回退：直接匹配primaryCategory/venue并记录证据
-      if (!extractedVenue && p.primaryCategory) {
-        const direct = venueMatcher.matchDetailed(p.primaryCategory);
-        if (direct) {
-          extractedVenue = direct.venue.name;
-          venueEvidence = {
-            source: 'primaryCategory',
-            matchType: direct.matchedBy,
-            extractedVenue: direct.matchedText,
-            confidence: direct.confidence || null,
-            raw: p.primaryCategory
-          };
-          recognition = {
-            matched: true,
-            source: 'primaryCategory',
-            confidence: direct.confidence || 0,
-            matchType: direct.matchedBy || 'unknown'
-          };
-        }
-      }
-      
       return {
         title: p.title,
-        venue: extractedVenue || p.primaryCategory || 'arXiv',
+        venue: classification.venueInfo?.name || p.primaryCategory || 'arXiv',
         abstract: p.summary,
         authors: p.authors,
         comments: p.comments,
         journalRef: p.journalRef,
         doi: p.doi,
-        venueEvidence,
+        venueEvidence: classification.venueEvidence,
         venueRecognition: recognition,
+        venueRecognitionCandidates: classification.candidates,
         ...p
       };
     }));

@@ -331,6 +331,65 @@ class VenueMatcher {
     return null;
   }
 
+  /**
+   * 对多来源venue文本进行统一识别，返回最佳命中结果与证据
+   */
+  classifyVenue(candidateSources = []) {
+    const ranked = [];
+
+    for (const source of candidateSources) {
+      const raw = source?.text;
+      if (!raw) continue;
+
+      const extracted = this.extractAndMatch(raw);
+      if (!extracted) continue;
+
+      const venueInfo = this.getVenueInfo(extracted.name);
+      if (!venueInfo) continue;
+
+      const sourceWeight = source.weight || 1;
+      const weightedScore = (extracted.confidence || 0) * sourceWeight;
+
+      ranked.push({
+        source: source.name || 'unknown',
+        raw,
+        extractedVenue: extracted.extractedVenue || extracted.abbreviation || extracted.name,
+        matchType: extracted.matchType || 'unknown',
+        confidence: extracted.confidence || 0,
+        weightedScore,
+        venueInfo
+      });
+    }
+
+    ranked.sort((a, b) => {
+      if (b.weightedScore !== a.weightedScore) return b.weightedScore - a.weightedScore;
+      if ((b.venueInfo?.tier || 0) !== (a.venueInfo?.tier || 0)) {
+        return (b.venueInfo?.tier || 0) - (a.venueInfo?.tier || 0);
+      }
+      return (b.confidence || 0) - (a.confidence || 0);
+    });
+
+    const best = ranked[0] || null;
+
+    return {
+      matched: !!best,
+      best,
+      candidates: ranked,
+      venueInfo: best?.venueInfo || null,
+      venueEvidence: best
+        ? {
+            source: best.source,
+            raw: best.raw,
+            extractedVenue: best.extractedVenue,
+            matchType: best.matchType,
+            confidence: best.confidence
+          }
+        : null,
+      isTopVenue: best?.venueInfo?.tier === 1,
+      tier: best?.venueInfo?.tier || 0
+    };
+  }
+
   checkRelevance(title = '', abstract = '') {
     if (!this.whitelist || !this.whitelist.researchKeywords) {
       return { relevant: false, matchedKeywords: [], score: 0 };
