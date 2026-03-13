@@ -443,6 +443,8 @@ class VenueMatcher {
       return {
         ...direct.venue,
         matchType: direct.matchedBy,
+        baseMatchType: direct.matchedBy,
+        extractionMode: 'direct',
         matchedBy: direct.matchedBy,
         extractionSource: text,
         extractedVenue: direct.matchedText,
@@ -474,7 +476,9 @@ class VenueMatcher {
         if (venueMatch?.venue) {
           return {
             ...venueMatch.venue,
-            matchType: n >= 3 ? 'phrase' : 'token',
+            matchType: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
+            baseMatchType: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
+            extractionMode: n >= 3 ? 'phrase' : 'token',
             matchedBy: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
             extractionSource: text,
             extractedVenue: phrase,
@@ -523,17 +527,19 @@ class VenueMatcher {
 
       const weightedScore = (extracted.confidence || 0) * sourceWeight;
 
+      const detailMatchType = extracted.baseMatchType || extracted.matchedBy || extracted.matchType;
+
       ranked.push({
         source: sourceName,
         raw,
         extractedVenue: extracted.extractedVenue || extracted.abbreviation || extracted.name,
-        matchType: extracted.matchType || 'unknown',
+        matchType: detailMatchType || 'unknown',
+        extractionMode: extracted.extractionMode || 'direct',
         confidence: extracted.confidence || 0,
         weightedScore,
         venueInfo
       });
 
-      const detailMatchType = extracted.matchedBy || extracted.matchType;
       const matchReason = detailMatchType === 'exact'
         ? 'EXACT_MATCH'
         : detailMatchType === 'abbreviation'

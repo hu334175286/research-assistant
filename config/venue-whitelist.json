@@ -287,6 +287,34 @@
           "publisher": "USENIX",
           "keywords": ["usenix security", "security symposium", "usenix sec"],
           "description": "安全顶级会议"
+        },
+        {
+          "name": "ACM International Symposium on Mobile Ad Hoc Networking and Computing",
+          "abbreviation": "MobiHoc",
+          "publisher": "ACM",
+          "keywords": ["mobihoc", "mobile ad hoc networking and computing", "acm mobihoc"],
+          "description": "移动自组织网络顶级会议"
+        },
+        {
+          "name": "ACM International Conference on emerging Networking EXperiments and Technologies",
+          "abbreviation": "CoNEXT",
+          "publisher": "ACM",
+          "keywords": ["conext", "emerging networking experiments and technologies", "acm conext"],
+          "description": "网络系统顶级会议"
+        },
+        {
+          "name": "ACM Internet Measurement Conference",
+          "abbreviation": "IMC",
+          "publisher": "ACM",
+          "keywords": ["imc", "internet measurement conference", "acm imc"],
+          "description": "网络测量顶级会议"
+        },
+        {
+          "name": "ACM/IEEE International Conference on Internet-of-Things Design and Implementation",
+          "abbreviation": "IoTDI",
+          "publisher": "ACM/IEEE",
+          "keywords": ["iotdi", "internet-of-things design and implementation", "acm ieee iotdi"],
+          "description": "物联网系统设计与实现顶级会议"
         }
       ]
     },
@@ -376,6 +404,28 @@
           "publisher": "IEEE",
           "keywords": ["ipccc", "performance computing communications", "ieee ipccc"],
           "description": "性能计算与通信会议"
+        },
+        {
+          "name": "IEEE Real-Time Systems Symposium",
+          "abbreviation": "RTSS",
+          "publisher": "IEEE",
+          "keywords": ["rtss", "real-time systems symposium", "ieee rtss"],
+          "description": "实时系统高水平会议"
+        },
+        {
+          "name": "IEEE Real-Time and Embedded Technology and Applications Symposium",
+          "abbreviation": "RTAS",
+          "publisher": "IEEE",
+          "keywords": ["rtas", "real-time and embedded technology and applications symposium", "ieee rtas"],
+          "description": "实时嵌入式系统高水平会议"
+        },
+        {
+          "name": "The Web Conference",
+          "abbreviation": "WWW",
+          "aliases": ["ACM WWW", "International World Wide Web Conference"],
+          "publisher": "ACM",
+          "keywords": ["www", "the web conference", "world wide web conference"],
+          "description": "Web与数据系统高水平会议"
         }
       ]
     }
