@@ -37,6 +37,13 @@
       "title": 0.35,
       "primaryCategory": 0.5
     },
+    "sourceConfidenceCaps": {
+      "journalRef": 1,
+      "comments": 0.95,
+      "venue": 0.9,
+      "title": 0.78,
+      "primaryCategory": 0.6
+    },
     "negativeSignals": {
       "patterns": [
         "\\bworkshop\\b",

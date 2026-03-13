@@ -201,6 +201,16 @@ class VenueMatcher {
     };
   }
 
+  getSourceConfidenceCaps() {
+    return this.rules?.sourceConfidenceCaps || {
+      journalRef: 1,
+      comments: 0.95,
+      venue: 0.9,
+      title: 0.78,
+      primaryCategory: 0.6
+    };
+  }
+
   applyNegativeSignalPenalty(raw = '', detailed = null) {
     if (!raw || !detailed || !detailed.venue) return detailed;
 
@@ -553,12 +563,15 @@ class VenueMatcher {
     const ranked = [];
     const reasonCodes = [];
 
+    const sourceConfidenceCaps = this.getSourceConfidenceCaps();
+
     for (const source of candidateSources) {
       const raw = source?.text;
       if (!raw) continue;
 
       const sourceName = source.name || 'unknown';
       const sourceWeight = source.weight || 1;
+      const sourceConfidenceCap = Number(sourceConfidenceCaps[sourceName] ?? 1);
       const rawDetailed = this.applyNegativeSignalPenalty(raw, this.matchDetailed(raw));
 
       if (rawDetailed?.ambiguous) {
@@ -580,7 +593,9 @@ class VenueMatcher {
         continue;
       }
 
-      const weightedScore = (extracted.confidence || 0) * sourceWeight;
+      const originalConfidence = extracted.confidence || 0;
+      const cappedConfidence = Math.min(originalConfidence, sourceConfidenceCap);
+      const weightedScore = cappedConfidence * sourceWeight;
 
       const detailMatchType = extracted.baseMatchType || extracted.matchedBy || extracted.matchType;
 
@@ -590,10 +605,16 @@ class VenueMatcher {
         extractedVenue: extracted.extractedVenue || extracted.abbreviation || extracted.name,
         matchType: detailMatchType || 'unknown',
         extractionMode: extracted.extractionMode || 'direct',
-        confidence: extracted.confidence || 0,
+        confidence: cappedConfidence,
+        originalConfidence,
+        confidenceCap: sourceConfidenceCap,
         weightedScore,
         venueInfo
       });
+
+      if (cappedConfidence < originalConfidence) {
+        reasonCodes.push(`CONFIDENCE_CAPPED:${sourceName}`);
+      }
 
       const matchReason = detailMatchType === 'exact'
         ? 'EXACT_MATCH'

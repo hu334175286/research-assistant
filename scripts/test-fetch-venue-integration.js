@@ -102,13 +102,26 @@ async function main() {
   const titleSignal = fetcher.evaluateAndFilter(titleSignalPapers, {
     minTier: 0,
     includeArXivOnly: false,
-    minVenueConfidence: 0.8
+    minVenueConfidence: 0.75
   });
 
   assert.strictEqual(titleSignal.length, 1, 'title 信号样本应被评估保留');
   const titlePaper = titleSignal[0].paper || titleSignal[0];
   assert.strictEqual(titlePaper.venueRecognition?.matched, true, 'title 中的 INFOCOM 应能命中');
   assert.strictEqual(titlePaper.venueRecognition?.source, 'title', 'title 信号应记录为 title 来源');
+  assert.ok((titlePaper.venueRecognition?.confidence || 0) <= 0.78, 'title 来源置信度应被封顶');
+
+  const titleSignalStrict = fetcher.evaluateAndFilter(titleSignalPapers, {
+    minTier: 0,
+    includeArXivOnly: false,
+    minVenueConfidence: 0.8
+  });
+  const titlePaperStrict = titleSignalStrict[0].paper || titleSignalStrict[0];
+  assert.strictEqual(titlePaperStrict.venueRecognition?.matched, false, '高阈值下 title 来源应被拒绝，避免误报');
+  assert.ok(
+    (titlePaperStrict.venueRecognition?.reasonCodes || []).includes('LOW_CONFIDENCE_REJECTED'),
+    'title 严格阈值拒绝应包含 LOW_CONFIDENCE_REJECTED'
+  );
 
   const lowConfidencePapers = [
     {
