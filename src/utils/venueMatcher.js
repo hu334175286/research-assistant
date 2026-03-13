@@ -361,10 +361,11 @@ class VenueMatcher {
         }
       }
 
-      // 4. 模糊包含匹配（仅对较长候选和较长名字启用，减少误匹配）
-      if (candidate.value.length >= 4) {
+      // 4. 模糊包含匹配（仅允许候选包含完整venue名，避免反向子串误报）
+      if (candidate.value.length >= 6) {
         for (const [name, venue] of this.venueMap) {
-          if (name.length >= 6 && (candidate.value.includes(name) || name.includes(candidate.value))) {
+          const tokenCount = name.split(/\s+/).filter(Boolean).length;
+          if (name.length >= 6 && tokenCount >= 2 && candidate.value.includes(name)) {
             return {
               venue,
               matchedBy: 'fuzzy',
@@ -442,6 +443,7 @@ class VenueMatcher {
       return {
         ...direct.venue,
         matchType: direct.matchedBy,
+        matchedBy: direct.matchedBy,
         extractionSource: text,
         extractedVenue: direct.matchedText,
         confidence: direct.confidence
@@ -473,6 +475,7 @@ class VenueMatcher {
           return {
             ...venueMatch.venue,
             matchType: n >= 3 ? 'phrase' : 'token',
+            matchedBy: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
             extractionSource: text,
             extractedVenue: phrase,
             confidence: Math.max(0, venueMatch.confidence - 0.05)
@@ -530,11 +533,12 @@ class VenueMatcher {
         venueInfo
       });
 
-      const matchReason = extracted.matchType === 'exact'
+      const detailMatchType = extracted.matchedBy || extracted.matchType;
+      const matchReason = detailMatchType === 'exact'
         ? 'EXACT_MATCH'
-        : extracted.matchType === 'abbreviation'
+        : detailMatchType === 'abbreviation'
           ? 'ABBR_MATCH'
-          : extracted.matchType === 'keyword'
+          : detailMatchType === 'keyword'
             ? 'KEYWORD_MATCH'
             : 'TEXT_MATCH';
       reasonCodes.push(`${matchReason}:${sourceName}`);

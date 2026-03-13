@@ -61,21 +61,25 @@ console.log('🔍 文本提取测试');
 console.log('─────────────────────────────────────────────────────────────');
 
 const extractCases = [
-  'Proc. IEEE INFOCOM 2005, Vol. 1, pp. 1-11. Miami, FL (2005)',
-  'To appear in ACM MobiCom 2024',
-  'Presented at IEEE SenSys 2023',
-  'IEEE Internet of Things Journal, vol. 10, no. 5',
-  'Published in ACM TOSN',
-  'INFOCOM Workshop on Edge AI 2025'
+  { text: 'Proc. IEEE INFOCOM 2005, Vol. 1, pp. 1-11. Miami, FL (2005)', expectMatched: true },
+  { text: 'To appear in ACM MobiCom 2024', expectMatched: true },
+  { text: 'Presented at IEEE SenSys 2023', expectMatched: true },
+  { text: 'IEEE Internet of Things Journal, vol. 10, no. 5', expectMatched: true },
+  { text: 'Published in ACM TOSN', expectMatched: true },
+  // workshop 场景应触发负信号降权，避免误判为顶会正式论文
+  { text: 'INFOCOM Workshop on Edge AI 2025', expectMatched: false }
 ];
 
-for (const text of extractCases) {
-  const result = venueMatcher.extractAndMatch(text);
+for (const item of extractCases) {
+  const result = venueMatcher.extractAndMatch(item.text);
+  const passed = item.expectMatched ? !!result : !result;
+  const status = passed ? '✅' : '❌';
+
   if (result) {
-    console.log(`✅ "${text.substring(0, 40)}..."`);
+    console.log(`${status} "${item.text.substring(0, 40)}..."`);
     console.log(`   -> ${result.name} (${result.abbreviation}, Tier ${result.tier})`);
   } else {
-    console.log(`❌ "${text.substring(0, 40)}..." -> 未匹配`);
+    console.log(`${status} "${item.text.substring(0, 40)}..." -> 未匹配`);
   }
 }
 console.log();

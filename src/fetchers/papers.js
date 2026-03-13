@@ -420,9 +420,9 @@ class PaperFetcher {
         matched: evaluated.filter(p => p.venueRecognition?.matched).length,
         topVenue: evaluated.filter(p => p.venueRecognition?.isTopVenue).length,
         tierDistribution: {
-          tier1: evaluated.filter(p => p.venueInfo?.tier === 1).length,
-          tier2: evaluated.filter(p => p.venueInfo?.tier === 2).length,
-          other: evaluated.filter(p => !p.venueInfo || p.venueInfo?.tier === 0).length
+          tier1: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 1).length,
+          tier2: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 2).length,
+          other: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 0).length
         },
         sourceDistribution: evaluated.reduce((acc, p) => {
           const src = p.venueRecognition?.source || 'fallback';
