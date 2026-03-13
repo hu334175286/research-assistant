@@ -31,7 +31,8 @@ class PaperFilter {
    */
   normalizePaper(paper) {
     const base = paper.paper || paper;
-    const tierFromLegacyScore = Math.round((paper.venueAnalysis?.tierScore || 0) / 100) || 0;
+    const legacyScore = paper.venueAnalysis?.tierScore || 0;
+    const tierFromLegacyScore = legacyScore >= 90 ? 1 : legacyScore >= 70 ? 2 : legacyScore > 0 ? 3 : 0;
     const tier =
       paper.venueInfo?.tier ??
       paper.recognizedVenueTier ??
@@ -102,6 +103,7 @@ class PaperFilter {
     const {
       minTier = 0,
       maxTier = 3,
+      tierIn = [],
       priorities = ['HIGH', 'MEDIUM', 'LOW'],
       requireRelevant = false,
       minQualityScore = 0,
@@ -117,8 +119,17 @@ class PaperFilter {
 
     const normalized = papers.map(p => this.normalizePaper(p));
 
+    const tierRank = (value) => {
+      if (value === 1) return 3;
+      if (value === 2) return 2;
+      if (value === 3) return 1;
+      return 0;
+    };
+
     return normalized.filter(p => {
-      if (p.tier < minTier || p.tier > maxTier) return false;
+      if (tierIn.length > 0 && !tierIn.includes(p.tier)) return false;
+      if (tierRank(p.tier) < tierRank(minTier)) return false;
+      if (maxTier > 0 && p.tier > maxTier) return false;
       if (!priorities.includes(p.priority)) return false;
       if (requireRelevant && !p.relevant) return false;
       if (p.qualityScore < minQualityScore) return false;
@@ -404,7 +415,7 @@ async function main() {
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--top-only':
-        criteria.minTier = 1;
+        criteria.tierIn = [1];
         break;
       case '--high-only':
         criteria.priorities = ['HIGH'];

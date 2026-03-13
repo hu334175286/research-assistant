@@ -144,6 +144,67 @@ class VenueMatcher {
     };
   }
 
+  getSourceWeights() {
+    return this.rules?.sourceWeights || {
+      journalRef: 1,
+      comments: 0.95,
+      venue: 0.9,
+      primaryCategory: 0.5
+    };
+  }
+
+  applyNegativeSignalPenalty(raw = '', detailed = null) {
+    if (!raw || !detailed || !detailed.venue) return detailed;
+
+    const cfg = this.rules?.negativeSignals || {};
+    const patterns = cfg.patterns || [];
+    if (!patterns.length) return detailed;
+
+    const text = this.normalizeText(raw);
+    if (!text) return detailed;
+
+    const matchedNegative = patterns.some((pattern) => {
+      try {
+        return new RegExp(pattern, 'i').test(text);
+      } catch (_) {
+        return false;
+      }
+    });
+
+    if (!matchedNegative) return detailed;
+
+    const allowIfExplicitAlias = cfg.allowIfExplicitAlias !== false;
+    if (allowIfExplicitAlias && (detailed.matchedBy === 'exact' || detailed.matchedBy === 'abbreviation')) {
+      return {
+        ...detailed,
+        hasNegativeSignal: true,
+        negativeSignalSuppressed: true
+      };
+    }
+
+    const penalty = Number(cfg.penalty ?? 0.25);
+    const minConfidence = Number(cfg.minConfidenceAfterPenalty ?? 0.75);
+    const confidence = Math.max(0, (detailed.confidence || 0) - penalty);
+
+    if (confidence < minConfidence) {
+      return {
+        venue: null,
+        matchedBy: 'negative-signal-filtered',
+        matchedText: detailed.matchedText,
+        confidence,
+        filtered: true,
+        reason: 'NEGATIVE_CONTEXT'
+      };
+    }
+
+    return {
+      ...detailed,
+      confidence,
+      hasNegativeSignal: true,
+      negativeSignalPenalty: penalty
+    };
+  }
+
   isKeywordReliable(keyword = '', mappedVenues = []) {
     const meta = this.keywordMeta.get(keyword) || { length: keyword.length, tokenCount: keyword.split(/\s+/).filter(Boolean).length };
     const genericTokens = new Set(this.rules?.genericTokens || [
@@ -375,7 +436,8 @@ class VenueMatcher {
     const normalizedText = this.stripNoise(text);
 
     // 1) 整体直接匹配
-    const direct = this.matchDetailed(normalizedText);
+    const directRaw = this.matchDetailed(normalizedText);
+    const direct = this.applyNegativeSignalPenalty(text, directRaw);
     if (direct && direct.venue) {
       return {
         ...direct.venue,
@@ -405,7 +467,8 @@ class VenueMatcher {
     for (let n = maxN; n >= 1; n--) {
       for (let i = 0; i + n <= tokens.length; i++) {
         const phrase = tokens.slice(i, i + n).join(' ');
-        const venueMatch = this.matchDetailed(phrase);
+        const venueMatchRaw = this.matchDetailed(phrase);
+        const venueMatch = this.applyNegativeSignalPenalty(text, venueMatchRaw);
         if (venueMatch?.venue) {
           return {
             ...venueMatch.venue,
@@ -434,10 +497,13 @@ class VenueMatcher {
 
       const sourceName = source.name || 'unknown';
       const sourceWeight = source.weight || 1;
-      const rawDetailed = this.matchDetailed(raw);
+      const rawDetailed = this.applyNegativeSignalPenalty(raw, this.matchDetailed(raw));
 
       if (rawDetailed?.ambiguous) {
         reasonCodes.push(`AMBIGUOUS_KEYWORD:${sourceName}`);
+      }
+      if (rawDetailed?.filtered) {
+        reasonCodes.push(`NEGATIVE_CONTEXT:${sourceName}`);
       }
 
       const extracted = this.extractAndMatch(raw);

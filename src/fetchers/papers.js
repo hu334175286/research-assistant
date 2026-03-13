@@ -177,29 +177,36 @@ class PaperFetcher {
    */
   evaluateAndFilter(papers, options = {}) {
     const {
-      minTier = 0,        // 最低等级要求
+      minTier = 0,        // 最低等级要求（1=顶级, 2=二区）
+      topVenueOnly = false,
       requireRelevant = false,  // 是否要求相关
       topN = null,        // 只返回前N篇
-      includeArXivOnly = true  // 是否包含仅arXiv的论文
+      includeArXivOnly = true,  // 是否包含仅arXiv的论文
+      minVenueConfidence = 0.78 // venue识别最小置信阈值
     } = options;
 
     console.log(`[PaperFetcher] 开始评估 ${papers.length} 篇论文...`);
 
     // 使用 venueMatcher 评估所有论文
     // 优先从journalRef和comments中提取venue信息
+    const sourceWeights = venueMatcher.getSourceWeights();
+
     const evaluatedRaw = venueMatcher.evaluatePapers(papers.map(p => {
       const classification = venueMatcher.classifyVenue([
-        { name: 'journalRef', text: p.journalRef, weight: 1.0 },
-        { name: 'comments', text: p.comments, weight: 0.95 },
-        { name: 'venue', text: p.venue, weight: 0.9 },
-        { name: 'primaryCategory', text: p.primaryCategory, weight: 0.5 }
+        { name: 'journalRef', text: p.journalRef, weight: sourceWeights.journalRef || 1.0 },
+        { name: 'comments', text: p.comments, weight: sourceWeights.comments || 0.95 },
+        { name: 'venue', text: p.venue, weight: sourceWeights.venue || 0.9 },
+        { name: 'primaryCategory', text: p.primaryCategory, weight: sourceWeights.primaryCategory || 0.5 }
       ]);
 
-      const recognition = classification.matched
+      const confidence = classification.best?.confidence || 0;
+      const confidentMatched = classification.matched && confidence >= minVenueConfidence;
+
+      const recognition = confidentMatched
         ? {
             matched: true,
             source: classification.best.source,
-            confidence: classification.best.confidence,
+            confidence,
             matchType: classification.best.matchType,
             tier: classification.tier,
             isTopVenue: classification.isTopVenue,
@@ -208,11 +215,13 @@ class PaperFetcher {
         : {
             matched: false,
             source: 'fallback',
-            confidence: 0,
+            confidence,
             matchType: 'none',
             tier: 0,
             isTopVenue: false,
-            reasonCodes: classification.reasonCodes || ['NO_VENUE_SIGNAL']
+            reasonCodes: classification.matched
+              ? [...(classification.reasonCodes || []), 'LOW_CONFIDENCE_REJECTED']
+              : (classification.reasonCodes || ['NO_VENUE_SIGNAL'])
           };
 
       return {
@@ -246,10 +255,22 @@ class PaperFetcher {
 
     // 过滤
     let filtered = evaluated.filter(item => {
-      // 检查等级要求（优先使用已评估venueInfo，回退到识别tier）
+      // 检查等级要求（tier: 1顶级 > 2二区 > 0未知）
+      const tier = item.venueInfo?.tier ?? item.recognizedVenueTier ?? item.venueRecognition?.tier ?? 0;
+
+      if (topVenueOnly && tier !== 1) {
+        return false;
+      }
+
       if (minTier > 0) {
-        const tier = item.venueInfo?.tier ?? item.recognizedVenueTier ?? item.venueRecognition?.tier ?? 0;
-        if (tier < minTier) {
+        const tierRank = (value) => {
+          if (value === 1) return 3;
+          if (value === 2) return 2;
+          if (value === 3) return 1;
+          return 0;
+        };
+
+        if (tierRank(tier) < tierRank(minTier)) {
           // 如果设置了includeArXivOnly，高相关性的arXiv论文也可以保留
           if (!includeArXivOnly || !item.relevance.isHighlyRelevant) {
             return false;

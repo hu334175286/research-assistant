@@ -38,7 +38,7 @@ function run() {
 
   const normalized = sample.map(p => filter.normalizePaper(p));
   assert.strictEqual(normalized[0].tier, 1, '新格式 tier 识别失败');
-  assert.strictEqual(normalized[1].tier, 1, '旧格式 tierScore->tier 识别失败');
+  assert.strictEqual(normalized[1].tier, 2, '旧格式 tierScore->tier 识别失败');
 
   const highOnly = filter.filter(sample, { priorities: ['HIGH'], minTier: 0, maxTier: 2 });
   assert.strictEqual(highOnly.length, 1, '高优先级筛选失败');
@@ -48,6 +48,12 @@ function run() {
     minQualityScore: 70
   });
   assert.strictEqual(scoreFiltered.length, 2, '质量分阈值筛选失败');
+
+  const topOnly = filter.filter(sample, {
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],
+    tierIn: [1]
+  });
+  assert.strictEqual(topOnly.length, 1, '顶级期刊/会议筛选失败');
 
   const keywordFiltered = filter.filter(sample, {
     priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],

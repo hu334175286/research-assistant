@@ -30,6 +30,25 @@
     ],
     "tokenSplitRegex": "[^a-z0-9&+\\\\-/]+",
     "maxNgram": 8,
+    "sourceWeights": {
+      "journalRef": 1,
+      "comments": 0.95,
+      "venue": 0.9,
+      "primaryCategory": 0.5
+    },
+    "negativeSignals": {
+      "patterns": [
+        "\\bworkshop\\b",
+        "\\bworkshops\\b",
+        "\\bposter\\b",
+        "\\bdemo\\b",
+        "\\bdoctoral consortium\\b",
+        "\\bshort paper\\b"
+      ],
+      "penalty": 0.25,
+      "minConfidenceAfterPenalty": 0.75,
+      "allowIfExplicitAlias": false
+    },
     "reliability": {
       "minLengthForAmbiguousKeyword": 10,
       "maxTokenCountForAmbiguousKeyword": 2,

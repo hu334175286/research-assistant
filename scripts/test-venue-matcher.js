@@ -65,7 +65,8 @@ const extractCases = [
   'To appear in ACM MobiCom 2024',
   'Presented at IEEE SenSys 2023',
   'IEEE Internet of Things Journal, vol. 10, no. 5',
-  'Published in ACM TOSN'
+  'Published in ACM TOSN',
+  'INFOCOM Workshop on Edge AI 2025'
 ];
 
 for (const text of extractCases) {
