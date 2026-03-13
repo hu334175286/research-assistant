@@ -474,15 +474,22 @@ class VenueMatcher {
         const venueMatchRaw = this.matchDetailed(phrase);
         const venueMatch = this.applyNegativeSignalPenalty(text, venueMatchRaw);
         if (venueMatch?.venue) {
+          const baseMatchType = venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token');
+          const extractionPenalty = baseMatchType === 'exact' || baseMatchType === 'abbreviation'
+            ? 0
+            : baseMatchType === 'keyword'
+              ? 0.03
+              : 0.05;
+
           return {
             ...venueMatch.venue,
-            matchType: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
-            baseMatchType: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
+            matchType: baseMatchType,
+            baseMatchType,
             extractionMode: n >= 3 ? 'phrase' : 'token',
-            matchedBy: venueMatch.matchedBy || (n >= 3 ? 'phrase' : 'token'),
+            matchedBy: baseMatchType,
             extractionSource: text,
             extractedVenue: phrase,
-            confidence: Math.max(0, venueMatch.confidence - 0.05)
+            confidence: Math.max(0, venueMatch.confidence - extractionPenalty)
           };
         }
       }

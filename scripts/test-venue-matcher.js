@@ -37,6 +37,9 @@ const testCases = [
   { input: 'Proc. IEEE INFOCOM 2005', expected: 'INFOCOM' },
   { input: 'Proceedings of ACM CCS 2023', expected: 'CCS' },
   { input: 'IEEE ICC', expected: 'ICC' },
+  { input: 'ACM MobiHoc 2026', expected: 'MobiHoc' },
+  { input: 'ACM CoNEXT 2025', expected: 'CoNEXT' },
+  { input: 'ACM IMC 2024', expected: 'IMC' },
   { input: 'Unknown Conference', expected: null },
   { input: 'International Conference on Advanced Networks', expected: null },
   { input: 'IEEE Journal', expected: null }

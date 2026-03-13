@@ -13,6 +13,13 @@ function run() {
         published: '2026-03-10T00:00:00Z'
       },
       venueInfo: { tier: 1, abbreviation: 'INFOCOM', tierScore: 100 },
+      venueRecognition: {
+        matched: true,
+        confidence: 0.96,
+        source: 'journalRef',
+        matchType: 'exact',
+        reasonCodes: ['EXACT_MATCH:journalRef']
+      },
       relevance: { relevant: true, matchedKeywords: ['iot security'] },
       priority: 'HIGH',
       qualityScore: 95
@@ -22,6 +29,13 @@ function run() {
       source: 'arXiv',
       published: '2026-03-01T00:00:00Z',
       venueAnalysis: { tierScore: 80, matched: { abbr: 'ICC' } },
+      venueRecognition: {
+        matched: true,
+        confidence: 0.82,
+        source: 'comments',
+        matchType: 'keyword',
+        reasonCodes: ['KEYWORD_MATCH:comments']
+      },
       qualityScore: 78,
       priority: 'MEDIUM',
       relevance: { relevant: true, matchedKeywords: ['wireless'] }
@@ -32,7 +46,14 @@ function run() {
       published: '2026-02-01T00:00:00Z',
       qualityScore: 35,
       priority: 'LOW',
-      relevance: { relevant: false, matchedKeywords: [] }
+      relevance: { relevant: false, matchedKeywords: [] },
+      venueRecognition: {
+        matched: false,
+        confidence: 0,
+        source: 'fallback',
+        matchType: 'none',
+        reasonCodes: ['NO_VENUE_SIGNAL']
+      }
     }
   ];
 
@@ -60,6 +81,30 @@ function run() {
     keywords: ['security']
   });
   assert.strictEqual(keywordFiltered.length, 1, '关键词筛选失败');
+
+  const venueMatchedOnly = filter.filter(sample, {
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],
+    venueMatchedOnly: true
+  });
+  assert.strictEqual(venueMatchedOnly.length, 2, 'venueMatchedOnly 筛选失败');
+
+  const sourceFiltered = filter.filter(sample, {
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],
+    venueSourceIn: ['journalRef']
+  });
+  assert.strictEqual(sourceFiltered.length, 1, 'venueSourceIn 筛选失败');
+
+  const confidenceFiltered = filter.filter(sample, {
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],
+    minVenueConfidence: 0.9
+  });
+  assert.strictEqual(confidenceFiltered.length, 1, 'minVenueConfidence 筛选失败');
+
+  const matchTypeFiltered = filter.filter(sample, {
+    priorities: ['HIGH', 'MEDIUM', 'LOW', 'NONE'],
+    matchTypeIn: ['exact']
+  });
+  assert.strictEqual(matchTypeFiltered.length, 1, 'matchTypeIn 筛选失败');
 
   const grouped = filter.groupBy(normalized, 'qualityBucket');
   assert.ok(grouped['S(90-100)'], '质量桶分层失败(S)');

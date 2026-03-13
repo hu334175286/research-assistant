@@ -2,6 +2,7 @@
  * 抓取流程中的Venue识别集成测试
  */
 
+const assert = require('assert');
 const PaperFetcher = require('../src/fetchers/papers');
 
 async function main() {
@@ -43,17 +44,66 @@ async function main() {
   console.log(`- 第一篇识别tier: ${firstPaper.recognizedVenueTier}`);
   console.log(`- 第一篇最终venue: ${firstPaper.venue}`);
 
-  if (topOnly.length !== 1) {
-    throw new Error(`期望顶级筛选后为1篇，实际为 ${topOnly.length}`);
-  }
+  assert.strictEqual(topOnly.length, 1, `期望顶级筛选后为1篇，实际为 ${topOnly.length}`);
+  assert.strictEqual(firstPaper.recognizedVenueTier, 1, `期望第一篇识别tier=1，实际为 ${firstPaper.recognizedVenueTier}`);
+  assert.ok(/internet of things journal/i.test(firstPaper.venue || ''), `期望第一篇venue被识别为IoT-J对应全称，实际为 ${firstPaper.venue}`);
 
-  if (firstPaper.recognizedVenueTier !== 1) {
-    throw new Error(`期望第一篇识别tier=1，实际为 ${firstPaper.recognizedVenueTier}`);
-  }
+  // 噪声文本中的短语抽取：应保留缩写/精确匹配类型，不被降级为 phrase
+  const noisyTopPapers = [
+    {
+      id: 'noise-1',
+      title: 'Routing in Large-Scale Sensor Networks',
+      summary: 'wireless sensor network routing and optimization',
+      authors: ['D'],
+      journalRef: '',
+      comments: 'To appear in Proceedings of ACM MobiCom 2026, camera-ready version',
+      primaryCategory: 'cs.NI',
+      source: 'arXiv'
+    }
+  ];
 
-  if (!firstPaper.venue || !/internet of things journal/i.test(firstPaper.venue)) {
-    throw new Error(`期望第一篇venue被识别为IoT-J对应全称，实际为 ${firstPaper.venue}`);
-  }
+  const noisyEvaluated = fetcher.evaluateAndFilter(noisyTopPapers, {
+    minTier: 1,
+    includeArXivOnly: false,
+    minVenueConfidence: 0.9
+  });
+
+  assert.strictEqual(noisyEvaluated.length, 1, '噪声文本中的顶会命中不应被过度惩罚');
+  const noisyPaper = noisyEvaluated[0].paper || noisyEvaluated[0];
+  assert.strictEqual(noisyPaper.venueRecognition?.matched, true, '噪声文本中的MobiCom应命中');
+  assert.ok(
+    ['exact', 'abbreviation'].includes(noisyPaper.venueRecognition?.matchType),
+    `期望噪声文本保留 exact/abbreviation 匹配类型，实际为 ${noisyPaper.venueRecognition?.matchType}`
+  );
+
+  // 低置信度命中拒绝分支（minVenueConfidence）
+  const lowConfidencePapers = [
+    {
+      id: '3',
+      title: 'Edge AI Demo Track',
+      summary: 'A demo paper for edge AI in IoT systems.',
+      authors: ['C'],
+      journalRef: '',
+      comments: 'Accepted to INFOCOM Workshop on Edge Intelligence 2026',
+      primaryCategory: 'cs.NI',
+      source: 'arXiv'
+    }
+  ];
+
+  const lowConfidence = fetcher.evaluateAndFilter(lowConfidencePapers, {
+    minTier: 0,
+    topN: 5,
+    minVenueConfidence: 0.9
+  });
+
+  assert.strictEqual(lowConfidence.length, 1, '低置信样本应保留用于后续流程');
+  const lowPaper = lowConfidence[0].paper || lowConfidence[0];
+  assert.strictEqual(lowPaper.venueRecognition?.matched, false, '低置信命中应被拒绝');
+  assert.ok(
+    (lowPaper.venueRecognition?.reasonCodes || []).includes('LOW_CONFIDENCE_REJECTED')
+      || (lowPaper.venueRecognition?.reasonCodes || []).some(code => String(code).startsWith('NEGATIVE_CONTEXT')),
+    '低置信拒绝原因码缺失'
+  );
 
   console.log('✅ 抓取流程Venue识别集成测试通过');
 }
