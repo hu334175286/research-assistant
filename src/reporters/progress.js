@@ -197,11 +197,16 @@ class ProgressReporter {
         venue: 0,
         primaryCategory: 0,
         fallback: 0
-      }
+      },
+      reasonDistribution: {}
     };
 
     for (const paper of papers) {
       const recognition = paper.venueRecognition || {};
+      for (const code of (recognition.reasonCodes || [])) {
+        stats.reasonDistribution[code] = (stats.reasonDistribution[code] || 0) + 1;
+      }
+
       if (recognition.matched) {
         stats.matchedCount += 1;
         if ((recognition.confidence || 0) >= 0.9) {
@@ -355,6 +360,10 @@ class ProgressReporter {
         lines.push(`    • 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`    • 未命中: ${vr.unmatchedCount} 篇`);
         lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        const reasonTop = Object.entries(vr.reasonDistribution || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        if (reasonTop.length > 0) {
+          lines.push(`    • 原因码Top: ${reasonTop.map(([k, v]) => `${k}=${v}`).join(', ')}`);
+        }
         lines.push('');
       }
 
@@ -467,6 +476,10 @@ class ProgressReporter {
         lines.push(`- 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`- 未命中: ${vr.unmatchedCount} 篇`);
         lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        const reasonTop = Object.entries(vr.reasonDistribution || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        if (reasonTop.length > 0) {
+          lines.push(`- 原因码Top: ${reasonTop.map(([k, v]) => `${k}=${v}`).join(', ')}`);
+        }
         lines.push('');
       }
 

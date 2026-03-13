@@ -394,6 +394,12 @@ class PaperFetcher {
           const src = p.venueRecognition?.source || 'fallback';
           acc[src] = (acc[src] || 0) + 1;
           return acc;
+        }, {}),
+        reasonDistribution: evaluated.reduce((acc, p) => {
+          for (const code of (p.venueRecognition?.reasonCodes || [])) {
+            acc[code] = (acc[code] || 0) + 1;
+          }
+          return acc;
         }, {})
       };
       await this.saveVenueSummary(venueSummary);
