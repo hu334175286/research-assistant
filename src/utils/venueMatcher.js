@@ -80,8 +80,7 @@ class VenueMatcher {
         const names = [
           venue.name,
           venue.abbreviation,
-          ...(venue.aliases || []),
-          ...(venue.abbreviation ? venue.abbreviation.split('-') : [])
+          ...(venue.aliases || [])
         ]
           .filter(Boolean)
           .map((s) => this.normalizeText(s));
@@ -137,19 +136,32 @@ class VenueMatcher {
     return cleaned.replace(/\s+/g, ' ').trim();
   }
 
+  getReliabilityRules() {
+    return {
+      minLengthForAmbiguousKeyword: this.rules?.reliability?.minLengthForAmbiguousKeyword ?? 10,
+      maxTokenCountForAmbiguousKeyword: this.rules?.reliability?.maxTokenCountForAmbiguousKeyword ?? 2,
+      maxLengthForGenericSingleToken: this.rules?.reliability?.maxLengthForGenericSingleToken ?? 5
+    };
+  }
+
   isKeywordReliable(keyword = '', mappedVenues = []) {
     const meta = this.keywordMeta.get(keyword) || { length: keyword.length, tokenCount: keyword.split(/\s+/).filter(Boolean).length };
     const genericTokens = new Set(this.rules?.genericTokens || [
       'conference', 'journal', 'ieee', 'acm', 'international', 'symposium', 'transactions', 'proceedings'
     ]);
+    const reliability = this.getReliabilityRules();
 
     // 映射到多个 venue 且关键词过短时，判定不可靠
-    if (mappedVenues.length > 1 && meta.length < 10 && meta.tokenCount <= 2) {
+    if (
+      mappedVenues.length > 1
+      && meta.length < reliability.minLengthForAmbiguousKeyword
+      && meta.tokenCount <= reliability.maxTokenCountForAmbiguousKeyword
+    ) {
       return false;
     }
 
     // 单词关键词过短且过于泛化，容易误报
-    if (meta.tokenCount === 1 && meta.length <= 5 && genericTokens.has(keyword)) {
+    if (meta.tokenCount === 1 && meta.length <= reliability.maxLengthForGenericSingleToken && genericTokens.has(keyword)) {
       return false;
     }
 
@@ -392,7 +404,7 @@ class VenueMatcher {
       for (let i = 0; i + n <= tokens.length; i++) {
         const phrase = tokens.slice(i, i + n).join(' ');
         const venueMatch = this.matchDetailed(phrase);
-        if (venueMatch) {
+        if (venueMatch?.venue) {
           return {
             ...venueMatch.venue,
             matchType: n >= 3 ? 'phrase' : 'token',

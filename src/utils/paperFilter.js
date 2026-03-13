@@ -32,7 +32,11 @@ class PaperFilter {
   normalizePaper(paper) {
     const base = paper.paper || paper;
     const tierFromLegacyScore = Math.round((paper.venueAnalysis?.tierScore || 0) / 100) || 0;
-    const tier = paper.venueInfo?.tier ?? tierFromLegacyScore;
+    const tier =
+      paper.venueInfo?.tier ??
+      paper.recognizedVenueTier ??
+      paper.venueRecognition?.tier ??
+      tierFromLegacyScore;
 
     const qualityScore =
       paper.qualityScore ??
@@ -44,6 +48,7 @@ class PaperFilter {
     const venue =
       paper.venueInfo?.abbreviation ||
       paper.venueInfo?.name ||
+      paper.venueEvidence?.extractedVenue ||
       paper.venueAnalysis?.matched?.abbr ||
       paper.venueAnalysis?.matched?.name ||
       base.venue ||
@@ -61,7 +66,12 @@ class PaperFilter {
       priority,
       qualityScore,
       relevant: !!paper.relevance?.relevant,
-      matchedKeywords: paper.relevance?.matchedKeywords || []
+      matchedKeywords: paper.relevance?.matchedKeywords || [],
+      venueMatched: !!paper.venueRecognition?.matched,
+      venueConfidence: paper.venueRecognition?.confidence || 0,
+      venueSource: paper.venueRecognition?.source || 'fallback',
+      venueMatchType: paper.venueRecognition?.matchType || 'none',
+      venueReasonCodes: paper.venueRecognition?.reasonCodes || []
     };
   }
 
@@ -89,10 +99,14 @@ class PaperFilter {
   filter(papers, criteria = {}) {
     const {
       minTier = 0,
-      maxTier = 2,
+      maxTier = 3,
       priorities = ['HIGH', 'MEDIUM', 'LOW'],
       requireRelevant = false,
       minQualityScore = 0,
+      minVenueConfidence = 0,
+      venueMatchedOnly = false,
+      venueSourceIn = [],
+      matchTypeIn = [],
       sources = [],
       keywords = [],
       dateRange = null,
@@ -106,6 +120,10 @@ class PaperFilter {
       if (!priorities.includes(p.priority)) return false;
       if (requireRelevant && !p.relevant) return false;
       if (p.qualityScore < minQualityScore) return false;
+      if (venueMatchedOnly && !p.venueMatched) return false;
+      if (p.venueConfidence < minVenueConfidence) return false;
+      if (venueSourceIn.length > 0 && !venueSourceIn.includes(p.venueSource)) return false;
+      if (matchTypeIn.length > 0 && !matchTypeIn.includes(p.venueMatchType)) return false;
 
       if (sources.length > 0 && !sources.includes(p.source)) return false;
 
@@ -164,6 +182,18 @@ class PaperFilter {
         case 'qualityBucket':
           key = this.getQualityBucket(paper.qualityScore || 0);
           break;
+        case 'venueSource':
+          key = paper.venueSource || 'fallback';
+          break;
+        case 'venueConfidence':
+          key = paper.venueConfidence >= 0.9
+            ? 'High(>=0.9)'
+            : paper.venueConfidence >= 0.75
+              ? 'Medium(0.75-0.89)'
+              : paper.venueConfidence > 0
+                ? 'Low(0-0.74)'
+                : 'None(0)';
+          break;
         default:
           key = 'Unknown';
       }
@@ -208,7 +238,9 @@ class PaperFilter {
         byPriority: this.groupBy(filtered, 'priority'),
         byVenue: this.groupBy(filtered, 'venue'),
         bySource: this.groupBy(filtered, 'source'),
-        byQualityBucket: this.groupBy(filtered, 'qualityBucket')
+        byQualityBucket: this.groupBy(filtered, 'qualityBucket'),
+        byVenueSource: this.groupBy(filtered, 'venueSource'),
+        byVenueConfidence: this.groupBy(filtered, 'venueConfidence')
       },
       topPapers: [...filtered]
         .sort((a, b) => b.qualityScore - a.qualityScore)
@@ -219,6 +251,8 @@ class PaperFilter {
           tier: p.tier,
           priority: p.priority,
           qualityScore: p.qualityScore,
+          venueConfidence: p.venueConfidence,
+          venueSource: p.venueSource,
           matchedKeywords: p.matchedKeywords.slice(0, 5)
         }))
     };
@@ -232,7 +266,7 @@ class PaperFilter {
 
   sectionWithBars(title, data, total) {
     const lines = [title, '─────────────────────────────────────────────────────────────'];
-    const entries = Object.entries(data);
+    const entries = Object.entries(data || {});
 
     if (entries.length === 0) {
       lines.push('  (无数据)');
@@ -266,6 +300,8 @@ class PaperFilter {
     lines.push(...this.sectionWithBars('📚 等级分布', report.summary.byTier, report.filteredPapers));
     lines.push(...this.sectionWithBars('🎯 优先级分布', report.summary.byPriority, report.filteredPapers));
     lines.push(...this.sectionWithBars('🧪 质量桶分布', report.summary.byQualityBucket, report.filteredPapers));
+    lines.push(...this.sectionWithBars('🧭 Venue识别来源', report.summary.byVenueSource, report.filteredPapers));
+    lines.push(...this.sectionWithBars('🎚️ Venue识别置信度', report.summary.byVenueConfidence, report.filteredPapers));
 
     if (Object.keys(report.summary.byVenue).length > 0) {
       const topVenue = Object.entries(report.summary.byVenue).slice(0, 10)
@@ -280,6 +316,7 @@ class PaperFilter {
         lines.push(`\n[${i + 1}] ${p.title}`);
         lines.push(`    Venue: ${p.venue || 'Unknown'} | Tier: ${p.tier}`);
         lines.push(`    优先级: ${p.priority} | 质量分: ${p.qualityScore}`);
+        lines.push(`    Venue识别: ${p.venueSource || 'fallback'} | 置信度: ${(p.venueConfidence || 0).toFixed(2)}`);
         if (p.matchedKeywords.length > 0) {
           lines.push(`    关键词: ${p.matchedKeywords.join(', ')}`);
         }
@@ -313,6 +350,8 @@ class PaperFilter {
     addTable('等级分布', report.summary.byTier);
     addTable('优先级分布', report.summary.byPriority);
     addTable('质量桶分布', report.summary.byQualityBucket);
+    addTable('Venue识别来源', report.summary.byVenueSource);
+    addTable('Venue识别置信度', report.summary.byVenueConfidence);
 
     md.push('## 高质量论文 Top 10');
     md.push('');
@@ -320,6 +359,7 @@ class PaperFilter {
       md.push(`${idx + 1}. **${p.title}**`);
       md.push(`   - Venue: ${p.venue || 'Unknown'} | Tier: ${p.tier}`);
       md.push(`   - 优先级: ${p.priority} | 质量分: ${p.qualityScore}`);
+      md.push(`   - Venue识别: ${p.venueSource || 'fallback'} | 置信度: ${(p.venueConfidence || 0).toFixed(2)}`);
     });
 
     md.push('');
@@ -372,6 +412,18 @@ async function main() {
         break;
       case '--min-score':
         criteria.minQualityScore = parseInt(args[++i], 10) || 0;
+        break;
+      case '--min-venue-confidence':
+        criteria.minVenueConfidence = parseFloat(args[++i]) || 0;
+        break;
+      case '--venue-matched-only':
+        criteria.venueMatchedOnly = true;
+        break;
+      case '--venue-source':
+        criteria.venueSourceIn = (criteria.venueSourceIn || []).concat(String(args[++i] || '').split(',').filter(Boolean));
+        break;
+      case '--match-type':
+        criteria.matchTypeIn = (criteria.matchTypeIn || []).concat(String(args[++i] || '').split(',').filter(Boolean));
         break;
       case '--relevant':
         criteria.requireRelevant = true;

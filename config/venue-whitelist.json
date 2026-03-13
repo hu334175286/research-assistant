@@ -30,6 +30,11 @@
     ],
     "tokenSplitRegex": "[^a-z0-9&+\\\\-/]+",
     "maxNgram": 8,
+    "reliability": {
+      "minLengthForAmbiguousKeyword": 10,
+      "maxTokenCountForAmbiguousKeyword": 2,
+      "maxLengthForGenericSingleToken": 5
+    },
     "genericTokens": [
       "conference",
       "journal",
