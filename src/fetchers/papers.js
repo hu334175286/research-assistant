@@ -191,8 +191,7 @@ class PaperFetcher {
       const classification = venueMatcher.classifyVenue([
         { name: 'journalRef', text: p.journalRef, weight: 1.0 },
         { name: 'comments', text: p.comments, weight: 0.95 },
-        { name: 'venue', text: p.venue, weight: 0.9 },
-        { name: 'primaryCategory', text: p.primaryCategory, weight: 0.75 }
+        { name: 'venue', text: p.venue, weight: 0.9 }
       ]);
 
       const recognition = classification.matched
@@ -202,11 +201,21 @@ class PaperFetcher {
             confidence: classification.best.confidence,
             matchType: classification.best.matchType,
             tier: classification.tier,
-            isTopVenue: classification.isTopVenue
+            isTopVenue: classification.isTopVenue,
+            reasonCodes: classification.reasonCodes || []
           }
-        : { matched: false, source: 'fallback', confidence: 0, matchType: 'none', tier: 0, isTopVenue: false };
+        : {
+            matched: false,
+            source: 'fallback',
+            confidence: 0,
+            matchType: 'none',
+            tier: 0,
+            isTopVenue: false,
+            reasonCodes: classification.reasonCodes || ['NO_VENUE_SIGNAL']
+          };
 
       return {
+        ...p,
         title: p.title,
         venue: classification.venueInfo?.name || p.primaryCategory || 'arXiv',
         abstract: p.summary,
@@ -217,15 +226,17 @@ class PaperFetcher {
         venueEvidence: classification.venueEvidence,
         venueRecognition: recognition,
         venueRecognitionCandidates: classification.candidates,
-        ...p
+        recognizedVenueTier: classification.tier || 0,
+        recognizedIsTopVenue: !!classification.isTopVenue
       };
     }));
 
     // 过滤
     let filtered = evaluated.filter(item => {
-      // 检查等级要求
+      // 检查等级要求（优先使用已评估venueInfo，回退到识别tier）
       if (minTier > 0) {
-        if (!item.venueInfo || item.venueInfo.tier < minTier) {
+        const tier = item.venueInfo?.tier ?? item.recognizedVenueTier ?? item.venueRecognition?.tier ?? 0;
+        if (tier < minTier) {
           // 如果设置了includeArXivOnly，高相关性的arXiv论文也可以保留
           if (!includeArXivOnly || !item.relevance.isHighlyRelevant) {
             return false;
@@ -250,19 +261,20 @@ class PaperFetcher {
     const tierCounts = { 1: 0, 2: 0, 0: 0 };
     const priorityCounts = { HIGH: 0, MEDIUM: 0, LOW: 0, NONE: 0 };
     const recognitionCounts = { matched: 0, unmatched: 0, highConfidence: 0 };
-    const recognitionSourceCounts = { journalRef: 0, comments: 0, venue: 0, primaryCategory: 0, fallback: 0 };
+    const recognitionSourceCounts = { journalRef: 0, comments: 0, venue: 0, fallback: 0 };
 
     for (const item of filtered) {
       const tier = item.venueInfo?.tier || 0;
       tierCounts[tier] = (tierCounts[tier] || 0) + 1;
       priorityCounts[item.priority] = (priorityCounts[item.priority] || 0) + 1;
 
-      if (item.venueRecognition?.matched) {
+      const recognition = item.paper?.venueRecognition || item.venueRecognition;
+      if (recognition?.matched) {
         recognitionCounts.matched += 1;
-        if ((item.venueRecognition.confidence || 0) >= 0.9) {
+        if ((recognition.confidence || 0) >= 0.9) {
           recognitionCounts.highConfidence += 1;
         }
-        const source = item.venueRecognition.source || 'fallback';
+        const source = recognition.source || 'fallback';
         recognitionSourceCounts[source] = (recognitionSourceCounts[source] || 0) + 1;
       } else {
         recognitionCounts.unmatched += 1;
@@ -273,7 +285,7 @@ class PaperFetcher {
     console.log(`[PaperFetcher] 等级分布: 顶级=${tierCounts[1]}, 二区=${tierCounts[2]}, 其他=${tierCounts[0]}`);
     console.log(`[PaperFetcher] 优先级分布: 高=${priorityCounts.HIGH}, 中=${priorityCounts.MEDIUM}, 低=${priorityCounts.LOW}`);
     console.log(`[PaperFetcher] Venue识别: 命中=${recognitionCounts.matched}, 高置信=${recognitionCounts.highConfidence}, 未命中=${recognitionCounts.unmatched}`);
-    console.log(`[PaperFetcher] Venue识别来源: journalRef=${recognitionSourceCounts.journalRef}, comments=${recognitionSourceCounts.comments}, venue=${recognitionSourceCounts.venue}, primaryCategory=${recognitionSourceCounts.primaryCategory}, fallback=${recognitionSourceCounts.fallback}`);
+    console.log(`[PaperFetcher] Venue识别来源: journalRef=${recognitionSourceCounts.journalRef}, comments=${recognitionSourceCounts.comments}, venue=${recognitionSourceCounts.venue}, fallback=${recognitionSourceCounts.fallback}`);
     
     return filtered;
   }

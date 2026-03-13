@@ -195,6 +195,32 @@ class VenueMatcher {
   /**
    * 详细匹配（包含匹配方式与置信度）
    */
+  disambiguateKeywordMatch(candidateValue, venues = []) {
+    if (!candidateValue || venues.length <= 1) {
+      return venues[0] || null;
+    }
+
+    const scored = venues.map((venue) => {
+      let score = 0;
+      const fields = [venue.name, venue.abbreviation, venue.publisher, ...(venue.aliases || [])]
+        .filter(Boolean)
+        .map((s) => this.normalizeText(s));
+
+      for (const field of fields) {
+        if (!field) continue;
+        if (candidateValue.includes(field)) {
+          score += Math.min(3, Math.max(1, field.split(/\s+/).length));
+        }
+      }
+
+      return { venue, score };
+    }).sort((a, b) => b.score - a.score);
+
+    if (!scored.length || scored[0].score === 0) return null;
+    if (scored.length > 1 && scored[0].score === scored[1].score) return null;
+    return scored[0].venue;
+  }
+
   matchDetailed(venueName) {
     if (!venueName) return null;
 
@@ -241,8 +267,20 @@ class VenueMatcher {
           : candidate.value.includes(keyword);
 
         if (matched) {
+          const selected = this.disambiguateKeywordMatch(candidate.value, venues);
+          if (!selected) {
+            return {
+              venue: null,
+              matchedBy: 'keyword-ambiguous',
+              matchedText: keyword,
+              confidence: Math.max(0, 0.45 - confidencePenalty),
+              ambiguous: true,
+              candidates: venues.map(v => ({ name: v.name, abbreviation: v.abbreviation, tier: v.tier }))
+            };
+          }
+
           return {
-            venue: venues[0],
+            venue: selected,
             matchedBy: 'keyword',
             matchedText: keyword,
             confidence: Math.max(0, 0.85 - confidencePenalty)
@@ -288,7 +326,7 @@ class VenueMatcher {
    */
   getVenueInfo(venueName) {
     const detailed = this.matchDetailed(venueName);
-    if (!detailed) return null;
+    if (!detailed || !detailed.venue) return null;
 
     const match = detailed.venue;
     const tierDef = this.whitelist?.tierDefinitions?.[match.tier.toString()] || {
@@ -324,7 +362,7 @@ class VenueMatcher {
 
     // 1) 整体直接匹配
     const direct = this.matchDetailed(normalizedText);
-    if (direct) {
+    if (direct && direct.venue) {
       return {
         ...direct.venue,
         matchType: direct.matchedBy,
@@ -374,22 +412,36 @@ class VenueMatcher {
    */
   classifyVenue(candidateSources = []) {
     const ranked = [];
+    const reasonCodes = [];
 
     for (const source of candidateSources) {
       const raw = source?.text;
       if (!raw) continue;
 
+      const sourceName = source.name || 'unknown';
+      const sourceWeight = source.weight || 1;
+      const rawDetailed = this.matchDetailed(raw);
+
+      if (rawDetailed?.ambiguous) {
+        reasonCodes.push(`AMBIGUOUS_KEYWORD:${sourceName}`);
+      }
+
       const extracted = this.extractAndMatch(raw);
-      if (!extracted) continue;
+      if (!extracted) {
+        reasonCodes.push(`NO_VENUE_SIGNAL:${sourceName}`);
+        continue;
+      }
 
       const venueInfo = this.getVenueInfo(extracted.name);
-      if (!venueInfo) continue;
+      if (!venueInfo) {
+        reasonCodes.push(`LOW_CONFIDENCE:${sourceName}`);
+        continue;
+      }
 
-      const sourceWeight = source.weight || 1;
       const weightedScore = (extracted.confidence || 0) * sourceWeight;
 
       ranked.push({
-        source: source.name || 'unknown',
+        source: sourceName,
         raw,
         extractedVenue: extracted.extractedVenue || extracted.abbreviation || extracted.name,
         matchType: extracted.matchType || 'unknown',
@@ -397,6 +449,15 @@ class VenueMatcher {
         weightedScore,
         venueInfo
       });
+
+      const matchReason = extracted.matchType === 'exact'
+        ? 'EXACT_MATCH'
+        : extracted.matchType === 'abbreviation'
+          ? 'ABBR_MATCH'
+          : extracted.matchType === 'keyword'
+            ? 'KEYWORD_MATCH'
+            : 'TEXT_MATCH';
+      reasonCodes.push(`${matchReason}:${sourceName}`);
     }
 
     ranked.sort((a, b) => {
@@ -420,6 +481,7 @@ class VenueMatcher {
       matched: !!best,
       best,
       candidates: ranked,
+      reasonCodes: [...new Set(reasonCodes)],
       venueInfo: best?.venueInfo || null,
       venueEvidence: best
         ? {
