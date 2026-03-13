@@ -113,6 +113,10 @@ class ProgressReporter {
         link: p.paper?.link || p.link,
         matchedKeywords: p.relevance?.matchedKeywords?.slice(0, 5) || [],
         relevanceScore: p.relevance?.score || 0,
+        recognitionMatched: !!p.venueRecognition?.matched,
+        recognitionConfidence: p.venueRecognition?.confidence || 0,
+        recognitionSource: p.venueEvidence?.source || p.venueRecognition?.source || '',
+        recognitionMatchType: p.venueEvidence?.matchType || p.venueRecognition?.matchType || '',
         published: p.paper?.published
       }));
     }
@@ -129,6 +133,7 @@ class ProgressReporter {
       byTier: this.countByTier(papers),
       bySource: this.countBySource(papers),
       byQualityBucket: this.countByQualityBucket(papers),
+      venueRecognition: this.countVenueRecognition(papers),
       topVenues: this.countTopVenues(papers),
       venueDistribution: this.getVenueDistribution(papers)
     };
@@ -176,6 +181,40 @@ class ProgressReporter {
     return Object.fromEntries(
       Object.entries(grouped).map(([bucket, info]) => [bucket, info.count])
     );
+  }
+
+  /**
+   * 统计 venue 识别可见性
+   */
+  countVenueRecognition(papers) {
+    const stats = {
+      matchedCount: 0,
+      unmatchedCount: 0,
+      highConfidenceCount: 0,
+      matchedBySource: {
+        journalRef: 0,
+        comments: 0,
+        primaryCategory: 0,
+        fallback: 0
+      }
+    };
+
+    for (const paper of papers) {
+      const recognition = paper.venueRecognition || {};
+      if (recognition.matched) {
+        stats.matchedCount += 1;
+        if ((recognition.confidence || 0) >= 0.9) {
+          stats.highConfidenceCount += 1;
+        }
+        const source = recognition.source || 'fallback';
+        stats.matchedBySource[source] = (stats.matchedBySource[source] || 0) + 1;
+      } else {
+        stats.unmatchedCount += 1;
+        stats.matchedBySource.fallback += 1;
+      }
+    }
+
+    return stats;
   }
 
   /**
@@ -267,6 +306,7 @@ class ProgressReporter {
         lines.push(`    作者: ${p.authors}`);
         lines.push(`    来源: ${p.venue} ${p.venueTier === 1 ? '⭐' : ''}`);
         lines.push(`    优先级: ${p.priority} | 质量分: ${p.qualityScore}`);
+        lines.push(`    Venue识别: ${p.recognitionMatched ? `✅ ${p.recognitionSource || 'unknown'}/${p.recognitionMatchType || 'unknown'} (${p.recognitionConfidence.toFixed(2)})` : '❌ 未命中（回退）'}`);
         if (p.matchedKeywords.length > 0) {
           lines.push(`    关键词: ${p.matchedKeywords.join(', ')}`);
         }
@@ -304,6 +344,16 @@ class ProgressReporter {
         for (const [bucket, count] of Object.entries(report.statistics.byQualityBucket)) {
           lines.push(`    • ${bucket}: ${count} 篇`);
         }
+        lines.push('');
+      }
+
+      if (report.statistics.venueRecognition) {
+        const vr = report.statistics.venueRecognition;
+        lines.push('  Venue识别可见性:');
+        lines.push(`    • 命中: ${vr.matchedCount} 篇`);
+        lines.push(`    • 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
+        lines.push(`    • 未命中: ${vr.unmatchedCount} 篇`);
+        lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
         lines.push('');
       }
 
@@ -375,6 +425,7 @@ class ProgressReporter {
         lines.push(`- **作者:** ${p.authors}`);
         lines.push(`- **来源:** ${p.venue} ${p.venueTier === 1 ? '⭐' : ''}`);
         lines.push(`- **优先级:** ${p.priority} | **质量分:** ${p.qualityScore}`);
+        lines.push(`- **Venue识别:** ${p.recognitionMatched ? `✅ ${p.recognitionSource || 'unknown'}/${p.recognitionMatchType || 'unknown'} (${p.recognitionConfidence.toFixed(2)})` : '❌ 未命中（回退）'}`);
         if (p.matchedKeywords.length > 0) {
           lines.push(`- **关键词:** ${p.matchedKeywords.join(', ')}`);
         }
@@ -405,6 +456,16 @@ class ProgressReporter {
         for (const [bucket, count] of Object.entries(report.statistics.byQualityBucket)) {
           lines.push(`- ${bucket}: ${count} 篇`);
         }
+        lines.push('');
+      }
+
+      if (report.statistics.venueRecognition) {
+        const vr = report.statistics.venueRecognition;
+        lines.push('### Venue识别可见性');
+        lines.push(`- 命中: ${vr.matchedCount} 篇`);
+        lines.push(`- 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
+        lines.push(`- 未命中: ${vr.unmatchedCount} 篇`);
+        lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
         lines.push('');
       }
 

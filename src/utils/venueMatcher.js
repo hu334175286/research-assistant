@@ -415,12 +415,21 @@ class VenueMatcher {
   }
 
   evaluatePaper(paper) {
-    const { title, venue, abstract, comments } = paper;
+    const { title, venue, abstract, comments, journalRef } = paper;
 
     let venueInfo = null;
     let matchSource = 'venue';
 
-    if (comments) {
+    // 优先使用更结构化的 journalRef，其次 comments，再回退 venue 字段
+    if (journalRef) {
+      const extracted = this.extractAndMatch(journalRef);
+      if (extracted) {
+        venueInfo = this.getVenueInfo(extracted.name);
+        matchSource = 'journalRef';
+      }
+    }
+
+    if (!venueInfo && comments) {
       const extracted = this.extractAndMatch(comments);
       if (extracted) {
         venueInfo = this.getVenueInfo(extracted.name);
