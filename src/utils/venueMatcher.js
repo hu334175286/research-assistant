@@ -186,7 +186,7 @@ class VenueMatcher {
     const minConfidence = Number(cfg.minConfidenceAfterPenalty ?? 0.75);
     const confidence = Math.max(0, (detailed.confidence || 0) - penalty);
 
-    if (confidence < minConfidence) {
+    if (confidence <= minConfidence) {
       return {
         venue: null,
         matchedBy: 'negative-signal-filtered',
