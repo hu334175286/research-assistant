@@ -8,10 +8,11 @@
 ### 1. 顶刊顶会识别模块 ✅ (已完成)
 - `config/venue-whitelist.json` - 顶刊顶会白名单
   - **15个顶级期刊 (Tier 1)** - IEEE/ACM Transactions系列
-  - **15个顶级会议 (Tier 1)** - SenSys, INFOCOM, MobiCom等
+  - **19个顶级会议 (Tier 1)** - SenSys, INFOCOM, MobiCom等
   - **6个二区期刊 (Tier 2)** - IEEE Letters, MDPI Sensors等
-  - **5个二区会议 (Tier 2)** - GLOBECOM, ICC, PerCom等
+  - **8个二区会议 (Tier 2)** - GLOBECOM, ICC, PerCom, RTSS, WWW等
   - **70+ 研究方向关键词** - 覆盖IoT、感知、网络、安全、AI等
+- `scripts/validate-venue-whitelist.js` - 白名单质量校验（冲突、缺失字段、tier完整性）
 - `src/utils/venueMatcher.js` - 期刊会议匹配逻辑
   - 支持从arXiv comments/journal-ref中提取venue信息
   - 关键词匹配和模糊匹配
@@ -78,6 +79,9 @@ npm run report
 
 # 测试进展报告质量分层 + 稳定投递
 npm run test:progress
+
+# 白名单质量校验（推荐每次修改后执行）
+npm run validate:venue
 
 # 测试顶刊顶会识别模块
 npm run test:venue
