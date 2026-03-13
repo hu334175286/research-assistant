@@ -364,7 +364,14 @@ class VenueMatcher {
     ranked.sort((a, b) => {
       if (b.weightedScore !== a.weightedScore) return b.weightedScore - a.weightedScore;
       if ((b.venueInfo?.tier || 0) !== (a.venueInfo?.tier || 0)) {
-        return (b.venueInfo?.tier || 0) - (a.venueInfo?.tier || 0);
+        // Tier 数值越小等级越高：1(顶级) > 2(二区) > 0(未知)
+        const rank = (tier) => {
+          if (tier === 1) return 3;
+          if (tier === 2) return 2;
+          if (tier === 3) return 1;
+          return 0;
+        };
+        return rank(b.venueInfo?.tier || 0) - rank(a.venueInfo?.tier || 0);
       }
       return (b.confidence || 0) - (a.confidence || 0);
     });

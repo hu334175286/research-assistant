@@ -74,7 +74,24 @@ for (const text of extractCases) {
 }
 console.log();
 
-// 4. 测试相关性检查
+// 4. 测试多来源分类排序（同分时应优先顶级）
+console.log('⚖️ 多来源分类排序测试');
+console.log('─────────────────────────────────────────────────────────────');
+
+const rankingCase = venueMatcher.classifyVenue([
+  { name: 'comments', text: 'IEEE ICC 2025', weight: 1.0 }, // Tier 2
+  { name: 'journalRef', text: 'IEEE INFOCOM 2025', weight: 1.0 } // Tier 1
+]);
+
+if (rankingCase.matched) {
+  console.log(`✅ 最佳命中: ${rankingCase.venueInfo.abbreviation} (Tier ${rankingCase.venueInfo.tier})`);
+  console.log(`   来源: ${rankingCase.best.source}, 置信度: ${rankingCase.best.confidence.toFixed(2)}`);
+} else {
+  console.log('❌ 未匹配到任何Venue');
+}
+console.log();
+
+// 5. 测试相关性检查
 console.log('📝 相关性检查测试');
 console.log('─────────────────────────────────────────────────────────────');
 

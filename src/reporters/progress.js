@@ -194,6 +194,7 @@ class ProgressReporter {
       matchedBySource: {
         journalRef: 0,
         comments: 0,
+        venue: 0,
         primaryCategory: 0,
         fallback: 0
       }
@@ -353,7 +354,7 @@ class ProgressReporter {
         lines.push(`    • 命中: ${vr.matchedCount} 篇`);
         lines.push(`    • 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`    • 未命中: ${vr.unmatchedCount} 篇`);
-        lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
         lines.push('');
       }
 
@@ -465,7 +466,7 @@ class ProgressReporter {
         lines.push(`- 命中: ${vr.matchedCount} 篇`);
         lines.push(`- 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`- 未命中: ${vr.unmatchedCount} 篇`);
-        lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
         lines.push('');
       }
 
