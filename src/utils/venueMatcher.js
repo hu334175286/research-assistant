@@ -756,6 +756,29 @@ class VenueMatcher {
 
     return stats;
   }
+
+  getWhitelistVersion() {
+    return this.whitelist?.version || 'unknown';
+  }
+
+  getMatcherMetadata() {
+    const stats = this.getStats() || {
+      totalVenues: 0,
+      topTierVenues: 0,
+      tier2Venues: 0,
+      researchKeywords: 0
+    };
+
+    return {
+      whitelistVersion: this.getWhitelistVersion(),
+      totalVenues: stats.totalVenues,
+      topTierVenues: stats.topTierVenues,
+      tier2Venues: stats.tier2Venues,
+      keywordIndexSize: this.keywordMap.size,
+      canonicalNameIndexSize: this.venueMap.size,
+      abbreviationRegexSize: this.abbrRegexList.length
+    };
+  }
 }
 
 module.exports = new VenueMatcher();

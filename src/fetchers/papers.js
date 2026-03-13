@@ -203,6 +203,7 @@ class PaperFetcher {
       const confidence = classification.best?.confidence || 0;
       const confidentMatched = classification.matched && confidence >= minVenueConfidence;
 
+      const whitelistVersion = venueMatcher.getWhitelistVersion();
       const recognition = confidentMatched
         ? {
             matched: true,
@@ -213,7 +214,8 @@ class PaperFetcher {
             canonicalVenue: classification.best.venueInfo?.name || '',
             tier: classification.tier,
             isTopVenue: classification.isTopVenue,
-            reasonCodes: classification.reasonCodes || []
+            reasonCodes: classification.reasonCodes || [],
+            whitelistVersion
           }
         : {
             matched: false,
@@ -225,7 +227,8 @@ class PaperFetcher {
             isTopVenue: false,
             reasonCodes: classification.matched
               ? [...(classification.reasonCodes || []), 'LOW_CONFIDENCE_REJECTED']
-              : (classification.reasonCodes || ['NO_VENUE_SIGNAL'])
+              : (classification.reasonCodes || ['NO_VENUE_SIGNAL']),
+            whitelistVersion
           };
 
       return {
@@ -488,6 +491,7 @@ class PaperFetcher {
 
       const venueSummary = {
         generatedAt: new Date().toISOString(),
+        matcher: venueMatcher.getMatcherMetadata(),
         fetched: rawPapers.length,
         retained: evaluated.length,
         matched: evaluated.filter(p => p.venueRecognition?.matched).length,
@@ -496,6 +500,18 @@ class PaperFetcher {
           tier1: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 1).length,
           tier2: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 2).length,
           other: evaluated.filter(p => (p.venueInfo?.tier ?? p.recognizedVenueTier ?? p.venueRecognition?.tier ?? 0) === 0).length
+        },
+        confidenceDistribution: {
+          high: evaluated.filter(p => (p.venueRecognition?.confidence || 0) >= 0.9).length,
+          medium: evaluated.filter(p => {
+            const confidence = p.venueRecognition?.confidence || 0;
+            return confidence >= 0.78 && confidence < 0.9;
+          }).length,
+          low: evaluated.filter(p => {
+            const confidence = p.venueRecognition?.confidence || 0;
+            return confidence > 0 && confidence < 0.78;
+          }).length,
+          none: evaluated.filter(p => (p.venueRecognition?.confidence || 0) === 0).length
         },
         sourceDistribution: evaluated.reduce((acc, p) => {
           const src = p.venueRecognition?.source || 'fallback';

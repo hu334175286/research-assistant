@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "智能物联感知与处理 - 顶刊顶会白名单",
   "tierDefinitions": {
     "1": {
@@ -72,7 +72,10 @@
       "trans": "transactions",
       "intl": "international",
       "conf": "conference",
-      "proc": "proceedings"
+      "proc": "proceedings",
+      "sec": "security",
+      "priv": "privacy",
+      "s and p": "s&p"
     }
   },
   "categories": {
