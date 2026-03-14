@@ -74,6 +74,9 @@ npm install
 # 抓取论文
 npm run fetch
 
+# 抓取论文（启用顶刊顶会强筛选）
+node src/index.js fetch --max-results 80 --top-venue-only --min-venue-confidence 0.85 --top-n 40
+
 # 生成进展报告
 npm run report
 
@@ -95,6 +98,17 @@ npm run filter:high      # 仅高优先级
 npm run scheduler:start   # 启动定时服务
 npm run scheduler:once    # 执行一次
 npm run scheduler:status  # 查看状态
+
+# 可在 config/scheduler.json 里覆盖抓取策略（示例）
+# {
+#   "fetchOptions": {
+#     "maxResults": 80,
+#     "topVenueOnly": true,
+#     "minVenueConfidence": 0.85,
+#     "requireRelevant": true,
+#     "topN": 40
+#   }
+# }
 ```
 
 ## 顶刊顶会白名单详情

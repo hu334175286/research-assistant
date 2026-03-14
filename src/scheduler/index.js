@@ -23,6 +23,14 @@ class TaskScheduler {
       reportSchedule: '0,30 * * * *', // 整点和半点
       maxRetries: 3,
       retryDelayMs: 5000,
+      fetchOptions: {
+        maxResults: 50,
+        requireRelevant: true,
+        minVenueConfidence: 0.78,
+        topVenueOnly: false,
+        minTier: 0,
+        topN: 30
+      },
       notifications: {
         enabled: true,
         onFetch: true,
@@ -129,10 +137,25 @@ class TaskScheduler {
 
     try {
       const fetcher = new PaperFetcher();
+      const fetchOptions = {
+        maxResults: config.fetchOptions?.maxResults ?? 50,
+        requireRelevant: config.fetchOptions?.requireRelevant ?? true,
+        minVenueConfidence: config.fetchOptions?.minVenueConfidence ?? 0.78,
+        topVenueOnly: config.fetchOptions?.topVenueOnly ?? false,
+        minTier: config.fetchOptions?.minTier ?? 0,
+        topN: config.fetchOptions?.topN ?? 30
+      };
+
       const result = await this.withRetry(async () => {
         const attemptResult = await fetcher.fetch({
-          arxiv: { maxResults: 50 },
-          filter: { requireRelevant: true }
+          arxiv: { maxResults: fetchOptions.maxResults },
+          filter: {
+            requireRelevant: fetchOptions.requireRelevant,
+            minVenueConfidence: fetchOptions.minVenueConfidence,
+            topVenueOnly: fetchOptions.topVenueOnly,
+            minTier: fetchOptions.minTier,
+            topN: fetchOptions.topN
+          }
         });
 
         if (!attemptResult.success) {
@@ -151,12 +174,14 @@ class TaskScheduler {
         type: 'fetch',
         status: result.success ? 'success' : 'error',
         duration,
+        fetchOptions,
         results: {
           fetched: result.fetched || 0,
           newPapers: result.newPapers || 0,
           total: result.total || 0,
           highPriority: result.highPriority || 0,
-          mediumPriority: result.mediumPriority || 0
+          mediumPriority: result.mediumPriority || 0,
+          unmatchedVenueSignals: result.unmatchedVenueSignals || 0
         }
       };
 

@@ -37,17 +37,26 @@ class ResearchAssistant {
    */
   async fetchPapers(options = {}) {
     console.log('[ResearchAssistant] 开始抓取论文...\n');
-    
+
+    const filterOptions = {
+      minTier: options.minTier || 0,
+      requireRelevant: options.requireRelevant || false,
+      topN: options.topN || 30
+    };
+
+    if (typeof options.topVenueOnly === 'boolean') {
+      filterOptions.topVenueOnly = options.topVenueOnly;
+    }
+    if (typeof options.minVenueConfidence === 'number') {
+      filterOptions.minVenueConfidence = options.minVenueConfidence;
+    }
+
     const result = await this.fetcher.fetch({
       arxiv: {
         maxResults: options.maxResults || 50,
         query: options.query
       },
-      filter: {
-        minTier: options.minTier || 0,
-        requireRelevant: options.requireRelevant || false,
-        topN: options.topN || 30
-      }
+      filter: filterOptions
     });
 
     if (result.success) {
@@ -132,17 +141,55 @@ class ResearchAssistant {
 }
 
 // 命令行处理
+function parseCliOptions(argv = []) {
+  const options = {};
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    switch (arg) {
+      case '--max-results':
+        options.maxResults = parseInt(argv[++i], 10) || 50;
+        break;
+      case '--top-n':
+        options.topN = parseInt(argv[++i], 10) || 30;
+        break;
+      case '--min-tier':
+        options.minTier = parseInt(argv[++i], 10) || 0;
+        break;
+      case '--min-venue-confidence':
+        options.minVenueConfidence = parseFloat(argv[++i]);
+        if (Number.isNaN(options.minVenueConfidence)) {
+          delete options.minVenueConfidence;
+        }
+        break;
+      case '--top-venue-only':
+        options.topVenueOnly = true;
+        break;
+      case '--require-relevant':
+        options.requireRelevant = true;
+        break;
+      default:
+        // 兼容旧方式: fetch 50
+        if (/^\d+$/.test(arg) && typeof options.maxResults !== 'number') {
+          options.maxResults = parseInt(arg, 10);
+        }
+        break;
+    }
+  }
+
+  return options;
+}
+
 async function main() {
   const assistant = new ResearchAssistant();
-  
+
   const command = process.argv[2];
-  
+  const cliOptions = parseCliOptions(process.argv.slice(3));
+
   switch (command) {
     case 'fetch':
       assistant.showInfo();
-      await assistant.fetchPapers({
-        maxResults: parseInt(process.argv[3]) || 50
-      });
+      await assistant.fetchPapers(cliOptions);
       break;
       
     case 'report':
