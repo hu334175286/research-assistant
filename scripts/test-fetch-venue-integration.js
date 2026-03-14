@@ -46,6 +46,7 @@ async function main() {
 
   assert.strictEqual(topOnly.length, 1, `期望顶级筛选后为1篇，实际为 ${topOnly.length}`);
   assert.strictEqual(firstPaper.recognizedVenueTier, 1, `期望第一篇识别tier=1，实际为 ${firstPaper.recognizedVenueTier}`);
+  assert.strictEqual(firstPaper.recognizedVenueType, 'journal', `期望第一篇识别类型=journal，实际为 ${firstPaper.recognizedVenueType}`);
   assert.ok(/internet of things journal/i.test(firstPaper.venue || ''), `期望第一篇venue被识别为IoT-J对应全称，实际为 ${firstPaper.venue}`);
 
   // 噪声文本中的短语抽取：应保留缩写/精确匹配类型，不被降级为 phrase
@@ -109,6 +110,7 @@ async function main() {
   const titlePaper = titleSignal[0].paper || titleSignal[0];
   assert.strictEqual(titlePaper.venueRecognition?.matched, true, 'title 中的 INFOCOM 应能命中');
   assert.strictEqual(titlePaper.venueRecognition?.source, 'title', 'title 信号应记录为 title 来源');
+  assert.strictEqual(titlePaper.recognizedVenueType, 'conference', 'title 命中的 INFOCOM 应标记为 conference');
   assert.ok((titlePaper.venueRecognition?.confidence || 0) <= 0.78, 'title 来源置信度应被封顶');
 
   const titleSignalStrict = fetcher.evaluateAndFilter(titleSignalPapers, {

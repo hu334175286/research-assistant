@@ -108,6 +108,7 @@ class ProgressReporter {
           venue: p.venueInfo?.name || p.paper?.venue || 'Unknown',
           venueAbbreviation: p.venueInfo?.abbreviation || '',
           venueTier: p.venueInfo?.tier || p.recognizedVenueTier || p.paper?.recognizedVenueTier || 0,
+          venueType: p.venueInfo?.type || p.recognizedVenueType || p.paper?.recognizedVenueType || 'unknown',
           venueTierLabel: p.venueInfo?.tierLabel || '',
           venueTierScore: p.venueInfo?.tierScore || 0,
           priority: p.priority,
@@ -199,8 +200,14 @@ class ProgressReporter {
         journalRef: 0,
         comments: 0,
         venue: 0,
+        title: 0,
         primaryCategory: 0,
         fallback: 0
+      },
+      matchedByVenueType: {
+        journal: 0,
+        conference: 0,
+        unknown: 0
       },
       reasonDistribution: {}
     };
@@ -217,7 +224,9 @@ class ProgressReporter {
           stats.highConfidenceCount += 1;
         }
         const source = recognition.source || 'fallback';
+        const venueType = paper.recognizedVenueType || recognition.venueType || paper.venueInfo?.type || 'unknown';
         stats.matchedBySource[source] = (stats.matchedBySource[source] || 0) + 1;
+        stats.matchedByVenueType[venueType] = (stats.matchedByVenueType[venueType] || 0) + 1;
       } else {
         stats.unmatchedCount += 1;
         stats.matchedBySource.fallback += 1;
@@ -314,7 +323,7 @@ class ProgressReporter {
         const p = report.highlights[i];
         lines.push(`\n[${i + 1}] ${p.title}`);
         lines.push(`    作者: ${p.authors}`);
-        lines.push(`    来源: ${p.venue} ${p.venueTier === 1 ? '⭐' : ''}`);
+        lines.push(`    来源: ${p.venue} [${p.venueType || 'unknown'}] ${p.venueTier === 1 ? '⭐' : ''}`);
         lines.push(`    优先级: ${p.priority} | 质量分: ${p.qualityScore}`);
         lines.push(`    Venue识别: ${p.recognitionMatched ? `✅ ${p.recognitionSource || 'unknown'}/${p.recognitionMatchType || 'unknown'} (${p.recognitionConfidence.toFixed(2)})` : '❌ 未命中（回退）'}`);
         if (p.matchedKeywords.length > 0) {
@@ -363,7 +372,8 @@ class ProgressReporter {
         lines.push(`    • 命中: ${vr.matchedCount} 篇`);
         lines.push(`    • 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`    • 未命中: ${vr.unmatchedCount} 篇`);
-        lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`    • 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, title=${vr.matchedBySource.title}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`    • 类型分布: journal=${vr.matchedByVenueType.journal}, conference=${vr.matchedByVenueType.conference}, unknown=${vr.matchedByVenueType.unknown}`);
         const reasonTop = Object.entries(vr.reasonDistribution || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
         if (reasonTop.length > 0) {
           lines.push(`    • 原因码Top: ${reasonTop.map(([k, v]) => `${k}=${v}`).join(', ')}`);
@@ -437,7 +447,7 @@ class ProgressReporter {
         lines.push(`### ${i + 1}. ${p.title}`);
         lines.push('');
         lines.push(`- **作者:** ${p.authors}`);
-        lines.push(`- **来源:** ${p.venue} ${p.venueTier === 1 ? '⭐' : ''}`);
+        lines.push(`- **来源:** ${p.venue} [${p.venueType || 'unknown'}] ${p.venueTier === 1 ? '⭐' : ''}`);
         lines.push(`- **优先级:** ${p.priority} | **质量分:** ${p.qualityScore}`);
         lines.push(`- **Venue识别:** ${p.recognitionMatched ? `✅ ${p.recognitionSource || 'unknown'}/${p.recognitionMatchType || 'unknown'} (${p.recognitionConfidence.toFixed(2)})` : '❌ 未命中（回退）'}`);
         if (p.matchedKeywords.length > 0) {
@@ -479,7 +489,8 @@ class ProgressReporter {
         lines.push(`- 命中: ${vr.matchedCount} 篇`);
         lines.push(`- 高置信(>=0.9): ${vr.highConfidenceCount} 篇`);
         lines.push(`- 未命中: ${vr.unmatchedCount} 篇`);
-        lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`- 来源分布: journalRef=${vr.matchedBySource.journalRef}, comments=${vr.matchedBySource.comments}, venue=${vr.matchedBySource.venue}, title=${vr.matchedBySource.title}, primaryCategory=${vr.matchedBySource.primaryCategory}, fallback=${vr.matchedBySource.fallback}`);
+        lines.push(`- 类型分布: journal=${vr.matchedByVenueType.journal}, conference=${vr.matchedByVenueType.conference}, unknown=${vr.matchedByVenueType.unknown}`);
         const reasonTop = Object.entries(vr.reasonDistribution || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
         if (reasonTop.length > 0) {
           lines.push(`- 原因码Top: ${reasonTop.map(([k, v]) => `${k}=${v}`).join(', ')}`);

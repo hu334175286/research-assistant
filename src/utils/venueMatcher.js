@@ -99,6 +99,15 @@ class VenueMatcher {
   /**
    * 构建快速查找索引
    */
+  inferVenueType(categoryKey = '', venue = {}) {
+    if (venue.type) return venue.type;
+
+    const category = String(categoryKey || '').toLowerCase();
+    if (category.includes('journal')) return 'journal';
+    if (category.includes('conference')) return 'conference';
+    return 'unknown';
+  }
+
   buildIndex() {
     if (!this.whitelist || !this.whitelist.categories) return;
 
@@ -114,7 +123,8 @@ class VenueMatcher {
         const venueEntry = {
           ...venue,
           category: categoryKey,
-          tier: category.tier
+          tier: category.tier,
+          type: this.inferVenueType(categoryKey, venue)
         };
 
         // 建立名称索引（规则化）
@@ -475,6 +485,7 @@ class VenueMatcher {
       abbreviation: match.abbreviation,
       publisher: match.publisher,
       category: match.category,
+      type: match.type,
       tier: match.tier,
       tierLabel: tierDef.label,
       tierScore: tierDef.score,
@@ -789,16 +800,24 @@ class VenueMatcher {
       totalVenues: 0,
       topTierVenues: 0,
       tier2Venues: 0,
+      journals: 0,
+      conferences: 0,
       researchKeywords: this.whitelist.researchKeywords?.length || 0
     };
 
-    for (const category of Object.values(this.whitelist.categories)) {
+    for (const [categoryKey, category] of Object.entries(this.whitelist.categories)) {
       if (category.venues) {
         stats.totalVenues += category.venues.length;
         if (category.tier === 1) {
           stats.topTierVenues += category.venues.length;
         } else if (category.tier === 2) {
           stats.tier2Venues += category.venues.length;
+        }
+
+        for (const venue of category.venues) {
+          const venueType = this.inferVenueType(categoryKey, venue);
+          if (venueType === 'journal') stats.journals += 1;
+          if (venueType === 'conference') stats.conferences += 1;
         }
       }
     }
@@ -823,6 +842,8 @@ class VenueMatcher {
       totalVenues: stats.totalVenues,
       topTierVenues: stats.topTierVenues,
       tier2Venues: stats.tier2Venues,
+      journals: stats.journals,
+      conferences: stats.conferences,
       keywordIndexSize: this.keywordMap.size,
       canonicalNameIndexSize: this.venueMap.size,
       abbreviationRegexSize: this.abbrRegexList.length

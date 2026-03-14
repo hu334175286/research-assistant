@@ -207,6 +207,7 @@ class PaperFetcher {
             matchType: classification.best.matchType,
             extractionMode: classification.best.extractionMode || 'direct',
             canonicalVenue: classification.best.venueInfo?.name || '',
+            venueType: classification.best.venueInfo?.type || 'unknown',
             tier: classification.tier,
             isTopVenue: classification.isTopVenue,
             reasonCodes: classification.reasonCodes || [],
@@ -239,7 +240,8 @@ class PaperFetcher {
         venueRecognition: recognition,
         venueRecognitionCandidates: classification.candidates,
         recognizedVenueTier: classification.tier || 0,
-        recognizedIsTopVenue: !!classification.isTopVenue
+        recognizedIsTopVenue: !!classification.isTopVenue,
+        recognizedVenueType: classification.venueInfo?.type || 'unknown'
       };
     }));
 
@@ -251,6 +253,7 @@ class PaperFetcher {
         venueEvidence: item.venueEvidence || basePaper.venueEvidence,
         recognizedVenueTier: item.recognizedVenueTier || basePaper.recognizedVenueTier || item.venueInfo?.tier || 0,
         recognizedIsTopVenue: item.recognizedIsTopVenue || basePaper.recognizedIsTopVenue || item.venueInfo?.tier === 1,
+        recognizedVenueType: item.recognizedVenueType || basePaper.recognizedVenueType || item.venueInfo?.type || 'unknown',
         venueRecognitionCandidates: item.venueRecognitionCandidates || basePaper.venueRecognitionCandidates || []
       };
     });
@@ -393,6 +396,7 @@ class PaperFetcher {
         venueRecognitionCandidates: classification.candidates || paper.venueRecognitionCandidates || [],
         recognizedVenueTier: classification.tier || 0,
         recognizedIsTopVenue: !!classification.isTopVenue,
+        recognizedVenueType: classification.venueInfo?.type || 'unknown',
         venueRecognition: confidentMatched
           ? {
               matched: true,
@@ -401,6 +405,7 @@ class PaperFetcher {
               matchType: classification.best?.matchType,
               extractionMode: classification.best?.extractionMode || 'direct',
               canonicalVenue: classification.best?.venueInfo?.name || '',
+              venueType: classification.best?.venueInfo?.type || 'unknown',
               tier: classification.tier,
               isTopVenue: classification.isTopVenue,
               reasonCodes: classification.reasonCodes || [],
@@ -587,6 +592,11 @@ class PaperFetcher {
         sourceDistribution: evaluated.reduce((acc, p) => {
           const src = p.venueRecognition?.source || 'fallback';
           acc[src] = (acc[src] || 0) + 1;
+          return acc;
+        }, {}),
+        venueTypeDistribution: evaluated.reduce((acc, p) => {
+          const venueType = p.recognizedVenueType || p.venueRecognition?.venueType || p.venueInfo?.type || 'unknown';
+          acc[venueType] = (acc[venueType] || 0) + 1;
           return acc;
         }, {}),
         reasonDistribution: evaluated.reduce((acc, p) => {

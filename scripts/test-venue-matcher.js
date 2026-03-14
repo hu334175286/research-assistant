@@ -18,6 +18,8 @@ if (stats) {
   console.log(`总期刊/会议数: ${stats.totalVenues}`);
   console.log(`  - 顶级 (Tier 1): ${stats.topTierVenues} 个`);
   console.log(`  - 二区 (Tier 2): ${stats.tier2Venues} 个`);
+  console.log(`  - 期刊: ${stats.journals} 个`);
+  console.log(`  - 会议: ${stats.conferences} 个`);
   console.log(`研究方向关键词: ${stats.researchKeywords} 个`);
 } else {
   console.log('❌ 无法获取统计信息');
