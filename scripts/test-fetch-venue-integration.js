@@ -151,6 +151,26 @@ async function main() {
     '低置信拒绝原因码缺失'
   );
 
+  // 历史数据回填：旧记录缺少 venueRecognition 时应补齐（用于合并流程）
+  const legacyPapers = [
+    {
+      id: 'legacy-1',
+      title: 'Legacy Industrial IoT Study',
+      abstract: 'iot edge analytics for industrial sensing',
+      journalRef: 'IEEE Transactions on Industrial Informatics, 2025',
+      comments: '',
+      venue: 'arXiv',
+      source: 'arXiv'
+    }
+  ];
+
+  const backfill = fetcher.backfillLegacyVenueRecognition(legacyPapers);
+  assert.strictEqual(backfill.upgradedCount, 1, '历史回填应识别出1条待升级记录');
+  const legacy = backfill.papers[0];
+  assert.strictEqual(legacy.venueRecognition?.matched, true, '历史记录回填后应命中白名单');
+  assert.strictEqual(legacy.recognizedVenueTier, 1, '历史记录回填后 tier 应为 1');
+  assert.strictEqual(legacy.venueRecognition?.source, 'journalRef', '历史记录回填来源应为 journalRef');
+
   console.log('✅ 抓取流程Venue识别集成测试通过');
 }
 

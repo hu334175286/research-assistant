@@ -193,13 +193,7 @@ class PaperFetcher {
     const sourceWeights = venueMatcher.getSourceWeights();
 
     const evaluatedRaw = venueMatcher.evaluatePapers(papers.map(p => {
-      const classification = venueMatcher.classifyVenue([
-        { name: 'journalRef', text: p.journalRef, weight: sourceWeights.journalRef || 1.0 },
-        { name: 'comments', text: p.comments, weight: sourceWeights.comments || 0.95 },
-        { name: 'venue', text: p.venue, weight: sourceWeights.venue || 0.9 },
-        { name: 'title', text: p.title, weight: sourceWeights.title || 0.35 },
-        { name: 'primaryCategory', text: p.primaryCategory, weight: sourceWeights.primaryCategory || 0.5 }
-      ]);
+      const classification = venueMatcher.classifyVenue(this.buildVenueCandidateSources(p, sourceWeights));
 
       const confidence = classification.best?.confidence || 0;
       const confidentMatched = classification.matched && confidence >= minVenueConfidence;
@@ -356,6 +350,82 @@ class PaperFetcher {
     await this.init();
     await fs.writeFile(this.papersFile, JSON.stringify(papers, null, 2));
     console.log(`[PaperFetcher] 已保存 ${papers.length} 篇论文到 ${this.papersFile}`);
+  }
+
+  buildVenueCandidateSources(paper = {}, sourceWeights = venueMatcher.getSourceWeights()) {
+    return [
+      { name: 'journalRef', text: paper.journalRef, weight: sourceWeights.journalRef || 1.0 },
+      { name: 'comments', text: paper.comments, weight: sourceWeights.comments || 0.95 },
+      { name: 'venue', text: paper.venue, weight: sourceWeights.venue || 0.9 },
+      { name: 'title', text: paper.title, weight: sourceWeights.title || 0.35 },
+      { name: 'primaryCategory', text: paper.primaryCategory, weight: sourceWeights.primaryCategory || 0.5 }
+    ];
+  }
+
+  needsVenueRecognitionBackfill(paper = {}) {
+    const recognition = paper.venueRecognition || paper.paper?.venueRecognition;
+    if (!recognition) return true;
+
+    const hasTier = (paper.recognizedVenueTier || paper.paper?.recognizedVenueTier || recognition.tier || 0) > 0;
+    return !recognition.source || !hasTier;
+  }
+
+  backfillLegacyVenueRecognition(existingPapers = []) {
+    if (!Array.isArray(existingPapers) || existingPapers.length === 0) {
+      return { papers: existingPapers || [], upgradedCount: 0 };
+    }
+
+    const sourceWeights = venueMatcher.getSourceWeights();
+    let upgradedCount = 0;
+
+    const upgraded = existingPapers.map((paper) => {
+      if (!this.needsVenueRecognitionBackfill(paper)) return paper;
+
+      const classification = venueMatcher.classifyVenue(this.buildVenueCandidateSources(paper, sourceWeights));
+      const confidence = classification.best?.confidence || 0;
+      const confidentMatched = classification.matched && confidence >= 0.78;
+      const whitelistVersion = venueMatcher.getWhitelistVersion();
+
+      const next = {
+        ...paper,
+        venue: classification.venueInfo?.name || paper.venue || paper.primaryCategory || 'arXiv',
+        venueEvidence: classification.venueEvidence || paper.venueEvidence,
+        venueRecognitionCandidates: classification.candidates || paper.venueRecognitionCandidates || [],
+        recognizedVenueTier: classification.tier || 0,
+        recognizedIsTopVenue: !!classification.isTopVenue,
+        venueRecognition: confidentMatched
+          ? {
+              matched: true,
+              source: classification.best?.source,
+              confidence,
+              matchType: classification.best?.matchType,
+              extractionMode: classification.best?.extractionMode || 'direct',
+              canonicalVenue: classification.best?.venueInfo?.name || '',
+              tier: classification.tier,
+              isTopVenue: classification.isTopVenue,
+              reasonCodes: classification.reasonCodes || [],
+              whitelistVersion
+            }
+          : {
+              matched: false,
+              source: 'fallback',
+              confidence,
+              matchType: 'none',
+              extractionMode: 'none',
+              tier: 0,
+              isTopVenue: false,
+              reasonCodes: classification.matched
+                ? [...(classification.reasonCodes || []), 'LOW_CONFIDENCE_REJECTED']
+                : (classification.reasonCodes || ['NO_VENUE_SIGNAL']),
+              whitelistVersion
+            }
+      };
+
+      upgradedCount += 1;
+      return next;
+    });
+
+    return { papers: upgraded, upgradedCount };
   }
 
   /**
@@ -531,9 +601,13 @@ class PaperFetcher {
       
       // 3. 加载已有论文
       const existing = await this.loadSavedPapers();
+      const { papers: existingBackfilled, upgradedCount } = this.backfillLegacyVenueRecognition(existing);
+      if (upgradedCount > 0) {
+        console.log(`[PaperFetcher] 已回填历史论文 venue 识别元数据: ${upgradedCount} 篇`);
+      }
       
       // 4. 合并
-      const merged = this.mergePapers(existing, evaluated);
+      const merged = this.mergePapers(existingBackfilled, evaluated);
       
       // 5. 保存
       await this.savePapers(merged);
@@ -544,6 +618,7 @@ class PaperFetcher {
         fetched: rawPapers.length,
         newPapers: evaluated.length,
         total: merged.length,
+        legacyBackfilled: upgradedCount,
         unmatchedVenueSignals: this.lastEvaluationDiagnostics?.unmatchedSignals?.length || 0,
         duration: Date.now() - startTime
       });
@@ -553,6 +628,7 @@ class PaperFetcher {
         fetched: rawPapers.length,
         newPapers: evaluated.length,
         total: merged.length,
+        legacyBackfilled: upgradedCount,
         highPriority: evaluated.filter(p => p.priority === 'HIGH').length,
         mediumPriority: evaluated.filter(p => p.priority === 'MEDIUM').length,
         venueSummary,
